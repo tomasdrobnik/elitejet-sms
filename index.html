@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elite Jet SMS Forms</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ELJ SMS">
+  <meta name="theme-color" content="#0d1b2a">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #dde6ee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .shell {
+      background: #0d1b2a;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 40px rgba(13,27,42,0.35);
+    }
+
+    .shell-header {
+      padding: 1.6rem 2rem 1.4rem;
+      border-bottom: 3px solid #1e3a5f;
+    }
+
+    .logo-line {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: #1e3a5f;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
+      color: #7a9bbf;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .org {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #7a9bbf;
+      line-height: 1.6;
+    }
+
+    .org strong {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: #e8f0f7;
+      letter-spacing: 0.14em;
+    }
+
+    .shell-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #4a6278;
+    }
+
+    .form-list {
+      list-style: none;
+      padding: 0.5rem 0;
+    }
+
+    .form-list li a {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.1rem 2rem;
+      text-decoration: none;
+      border-bottom: 1px solid #1a2d42;
+      transition: background 0.15s;
+    }
+
+    .form-list li a:hover,
+    .form-list li a:active {
+      background: #1e3a5f;
+    }
+
+    .form-icon {
+      font-size: 20px;
+      width: 2rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .form-info {}
+
+    .form-code {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #4a6278;
+      margin-bottom: 0.2rem;
+    }
+
+    .form-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: #e8f0f7;
+      letter-spacing: 0.06em;
+    }
+
+    .form-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      color: #7a9bbf;
+      letter-spacing: 0.06em;
+      margin-top: 0.15rem;
+    }
+
+    .form-arrow {
+      margin-left: auto;
+      color: #4a6278;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .shell-footer {
+      padding: 0.8rem 2rem;
+      border-top: 1px solid #1a2d42;
+    }
+
+    .offline-status {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #4a6278;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #4a6278;
+      transition: background 0.3s;
+    }
+
+    .status-dot.online  { background: #52b376; }
+    .status-dot.offline { background: #c8391b; }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="shell-header">
+    <div class="logo-line">
+      <div class="logo-mark">ELJ</div>
+      <div class="org">
+        <strong>Elite Jet s.r.o.</strong>
+        Safety Management System
+      </div>
+    </div>
+    <div class="shell-title">OM-B · Verification Reports</div>
+  </div>
+
+  <ul class="form-list">
+    <li>
+      <a href="wb_verification_report.html">
+        <span class="form-icon">⚖</span>
+        <div class="form-info">
+          <div class="form-code">ELJ-F-FLT-0XX · OM-B</div>
+          <div class="form-name">W&amp;B Periodic Verification</div>
+          <div class="form-sub">Weight &amp; Balance · AFM vs ForeFlight</div>
+        </div>
+        <span class="form-arrow">›</span>
+      </a>
+    </li>
+    <li>
+      <a href="perf_verification_report.html">
+        <span class="form-icon">✈</span>
+        <div class="form-info">
+          <div class="form-code">ELJ-F-FLT-0XX · OM-B</div>
+          <div class="form-name">Performance Periodic Verification</div>
+          <div class="form-sub">Takeoff &amp; Landing · AFM / ForeFlight / FMS</div>
+        </div>
+        <span class="form-arrow">›</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="shell-footer">
+    <div class="offline-status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">checking…</span>
+    </div>
+  </div>
+</div>
+
+<link rel="manifest" href="manifest.json">
+<script>
+  /* PWA service worker registration */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  }
+
+  /* Online/offline status indicator */
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+
+  function updateStatus() {
+    if (navigator.onLine) {
+      dot.className  = 'status-dot online';
+      text.textContent = 'Online — cache refreshed';
+    } else {
+      dot.className  = 'status-dot offline';
+      text.textContent = 'Offline — using cached version';
+    }
+  }
+
+  updateStatus();
+  window.addEventListener('online',  updateStatus);
+  window.addEventListener('offline', updateStatus);
+</script>
+</body>
+</html>
