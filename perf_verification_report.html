@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Periodic Verification Report</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ELJ Perf">
+  <meta name="theme-color" content="#0d1b2a">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --navy: #0d1b2a; --slate: #1e3a5f; --mid: #2e5f8a;
+      --rule: #b0c4d8; --light: #e8f0f7; --ink: #0d1b2a;
+      --muted: #4a6278; --white: #ffffff; --field-bg: #f4f8fc;
+      --accent: #c8391b; --green: #1a6b3a;
+      --conv-bg: #fffbe6; --conv-border: #e0c040;
+      --ok-bg: #e6f4ec; --ok-txt: #145a2e; --ok-border: #52b376;
+      --warn-bg: #fff3cd; --warn-txt: #7a5200; --warn-border: #e0a020;
+      --fail-bg: #fde8e4; --fail-txt: #8b1a0e; --fail-border: #c8391b;
+      --fms-col: #f0f0ff;
+      /* sub-section colour scheme */
+      --dry-bg: #e8f4ec; --dry-accent: #1a6b3a; --dry-text: #0d3a1e;
+      --wet-bg: #e0eef8; --wet-accent: #1e3a5f; --wet-text: #0d1b2a;
+      --con-bg: #fdf0e0; --con-accent: #8a4a00; --con-text: #5a2e00;
+      /* chart colour palette - distinct, accessible */
+      --c-afm: #0d1b2a; --c-ff: #1a6b9a; --c-fms: #7b3fa0;
+      --c-afm-a: rgba(13,27,42,0.85); --c-ff-a: rgba(26,107,154,0.80); --c-fms-a: rgba(123,63,160,0.80);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; font-size: 10px; background: #dde6ee; color: var(--ink); padding: 1.5rem; }
+    article { background: var(--white); max-width: 920px; margin: 0 auto; border-top: 4px solid var(--slate); box-shadow: 0 4px 32px rgba(13,27,42,0.18); }
+    header { background: var(--navy); color: var(--white); padding: 0.9rem 1.6rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; }
+    header h1 { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; line-height: 1.4; }
+    header p { font-family: 'DM Mono', monospace; font-size: 8.5px; color: #7a9bbf; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; }
+    main { padding: 1.1rem 1.6rem 1.6rem; }
+    h2 { font-family: 'DM Mono', monospace; font-size: 8.5px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--slate); border-bottom: 1.5px solid var(--rule); padding-bottom: 0.28rem; margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.5rem; }
+    h2 span.badge { background: var(--slate); color: var(--white); font-size: 8px; padding: 0.08rem 0.35rem; letter-spacing: 0.1em; }
+    h3 { font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mid); margin-bottom: 0.5rem; margin-top: 0.8rem; padding-left: 0.4rem; border-left: 2px solid var(--mid); }
+
+    /* ── COLLAPSIBLE SUB-SECTION ── */
+    .sub-section { margin-top: 0.9rem; border: 1.5px solid var(--rule); }
+
+    .sub-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.45rem 0.8rem 0.45rem 0.7rem;
+      cursor: pointer; user-select: none;
+      gap: 0.6rem;
+    }
+    .sub-section-header:hover { filter: brightness(0.96); }
+
+    .sub-section-header .ssh-label {
+      font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .sub-section-header .ssh-label .ssh-icon {
+      font-size: 11px; width: 1.2rem; text-align: center; flex-shrink: 0;
+    }
+    .sub-section-header .ssh-chevron {
+      font-size: 9px; transition: transform 0.2s; flex-shrink: 0;
+    }
+    .sub-section-header .ssh-status {
+      font-family: 'DM Mono', monospace; font-size: 7.5px; letter-spacing: 0.1em;
+      opacity: 0.75; margin-left: auto; padding-right: 0.6rem;
+    }
+
+    /* colour variants per surface */
+    .sub-section.dry > .sub-section-header { background: var(--dry-bg); border-left: 4px solid var(--dry-accent); }
+    .sub-section.dry > .sub-section-header .ssh-label { color: var(--dry-text); }
+    .sub-section.wet > .sub-section-header { background: var(--wet-bg); border-left: 4px solid var(--wet-accent); }
+    .sub-section.wet > .sub-section-header .ssh-label { color: var(--wet-text); }
+    .sub-section.con > .sub-section-header { background: var(--con-bg); border-left: 4px solid var(--con-accent); }
+    .sub-section.con > .sub-section-header .ssh-label { color: var(--con-text); }
+
+    .sub-section-body { display: none; padding: 0.7rem 0.8rem 0.8rem; border-top: 1px solid var(--rule); }
+    .sub-section-body.open { display: block; }
+
+    /* collapsed chevron direction */
+    .sub-section-header.collapsed .ssh-chevron { transform: rotate(-90deg); }
+    section { margin-bottom: 1.3rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 1rem; }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.45rem 1rem; }
+    .span-2 { grid-column: span 2; }
+    .field { display: flex; flex-direction: column; gap: 0.15rem; }
+    .field label { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .field input[type="text"], .field input[type="date"], .field select {
+      font-family: 'DM Mono', monospace; font-size: 10.5px; border: none; border-bottom: 1px solid var(--rule);
+      background: transparent; color: var(--ink); padding: 0.2rem 0.15rem; width: 100%; outline: none;
+      transition: border-color 0.15s; appearance: none; -webkit-appearance: none;
+    }
+    .field input:focus, .field select:focus { border-bottom-color: var(--mid); }
+    .field select { cursor: pointer; }
+
+    /* CONVERTER */
+    .conv-box { background: var(--conv-bg); border: 1px solid var(--conv-border); padding: 0.55rem 0.8rem 0.6rem; margin-bottom: 0.8rem; }
+    .conv-box .conv-title { font-family: 'DM Mono', monospace; font-size: 7.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #7a6010; }
+    .conv-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .conv-row + .conv-row { margin-top: 0.35rem; }
+    .conv-row label { font-family: 'DM Mono', monospace; font-size: 8px; color: #7a6010; white-space: nowrap; width: 5rem; flex-shrink: 0; }
+    .conv-row input { font-family: 'DM Mono', monospace; font-size: 10.5px; border: none; border-bottom: 1px solid var(--conv-border); background: transparent; color: var(--ink); width: 5.5rem; outline: none; padding: 0.1rem 0.15rem; text-align: right; }
+    .conv-unit, .conv-result-unit { font-family: 'DM Mono', monospace; font-size: 8px; color: #7a6010; width: 1.5rem; }
+    .conv-arrow { font-size: 10px; color: #b08a00; flex-shrink: 0; }
+    .conv-result { font-family: 'DM Mono', monospace; font-size: 10.5px; font-weight: 500; color: #3a2a00; min-width: 5rem; text-align: right; }
+
+    /* FMS TOGGLE */
+    .fms-toggle-bar {
+      display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.8rem;
+      padding: 0.4rem 0.7rem; background: var(--fms-col); border-left: 3px solid #6a4c93;
+    }
+    .fms-toggle-bar label {
+      font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #3a1a6b; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;
+    }
+    .fms-toggle-bar input[type="checkbox"] { width: 13px; height: 13px; accent-color: #6a4c93; cursor: pointer; }
+    .fms-toggle-bar .fms-hint { font-family: 'DM Mono', monospace; font-size: 8px; color: #6a4c93; }
+
+    /* PHASE TABS */
+    .phase-tabs { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--rule); }
+    .phase-tabs button { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.45rem 1.2rem; border: none; background: transparent; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; }
+    .phase-tabs button.active { color: var(--slate); border-bottom-color: var(--slate); font-weight: 500; }
+    .phase-panel { display: none; }
+    .phase-panel.active { display: block; }
+
+    /* TABLE */
+    table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 0.4rem; }
+    thead tr { background: var(--slate); color: var(--white); }
+    thead th { font-family: 'DM Mono', monospace; font-size: 7.5px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.4rem 0.55rem; text-align: left; border-right: 1px solid rgba(255,255,255,0.12); line-height: 1.4; }
+    thead th.fms-col { background: #3a2060; }
+    thead th:last-child { border-right: none; }
+    tbody tr { border-bottom: 1px solid var(--rule); }
+    tbody tr:nth-child(even) td { background: var(--field-bg); }
+    tbody td { padding: 0.28rem 0.55rem; vertical-align: middle; }
+    tbody td:first-child { font-family: 'DM Mono', monospace; font-size: 8.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; width: 14%; }
+    tbody td input[type="text"] { font-family: 'DM Mono', monospace; font-size: 10.5px; border: none; border-bottom: 1px solid var(--rule); background: transparent; width: 100%; outline: none; padding: 0.1rem; color: var(--ink); transition: border-color 0.15s; }
+    tbody td input:focus { border-bottom-color: var(--mid); }
+    td.fms-input-col { background: var(--fms-col) !important; }
+    td.fms-diff-col { background: #ece8f8 !important; }
+    .fms-hidden { display: none !important; }
+
+    /* COMPUTED CELL */
+    .calc { font-family: 'DM Mono', monospace; font-size: 10.5px; font-weight: 500; display: block; padding: 0.1rem; min-width: 3.5rem; text-align: right; border-radius: 2px; transition: background 0.2s, color 0.2s; }
+    .calc.empty { color: var(--muted); font-weight: 400; font-style: italic; }
+    .calc.diff-ok   { background: var(--ok-bg);   color: var(--ok-txt);   border-left: 3px solid var(--ok-border);   padding-left: 0.3rem; }
+    .calc.diff-warn { background: var(--warn-bg);  color: var(--warn-txt); border-left: 3px solid var(--warn-border);  padding-left: 0.3rem; }
+    .calc.diff-fail { background: var(--fail-bg);  color: var(--fail-txt); border-left: 3px solid var(--fail-border);  padding-left: 0.3rem; }
+    td.cat-req { background: #f0f5ea !important; }
+    .calc.req-val { color: var(--green); }
+
+    /* LEGEND */
+    .legend { display: flex; gap: 0.8rem; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; }
+    .legend span { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 0.08em; padding: 0.18rem 0.5rem; border-radius: 2px; display: flex; align-items: center; gap: 0.3rem; }
+    .legend span.l-ok   { background: var(--ok-bg);   color: var(--ok-txt);   border-left: 3px solid var(--ok-border); }
+    .legend span.l-warn { background: var(--warn-bg);  color: var(--warn-txt); border-left: 3px solid var(--warn-border); }
+    .legend span.l-fail { background: var(--fail-bg);  color: var(--fail-txt); border-left: 3px solid var(--fail-border); }
+    .legend span.l-fms  { background: var(--fms-col);  color: #3a1a6b;         border-left: 3px solid #6a4c93; }
+
+    /* SUMMARY MATRIX */
+    .matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.6rem; }
+    .matrix-block { border: 1px solid var(--rule); }
+    .matrix-block-title { font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; background: var(--slate); color: var(--white); padding: 0.3rem 0.6rem; }
+    .matrix-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    .matrix-table th { font-family: 'DM Mono', monospace; font-size: 7px; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.45rem; background: var(--light); color: var(--muted); border-bottom: 1px solid var(--rule); text-align: right; }
+    .matrix-table th:first-child { text-align: left; }
+    .matrix-table td { font-family: 'DM Mono', monospace; font-size: 9px; padding: 0.22rem 0.45rem; border-bottom: 1px solid var(--rule); text-align: right; vertical-align: middle; }
+    .matrix-table td:first-child { text-align: left; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 8px; }
+    .matrix-table tr:last-child td { border-bottom: none; }
+    .mtx-val { font-weight: 500; color: var(--ink); }
+    .mtx-diff { display: inline-block; font-size: 8px; padding: 0.08rem 0.3rem; border-radius: 2px; }
+    .mtx-ok   { background: var(--ok-bg);   color: var(--ok-txt); }
+    .mtx-warn { background: var(--warn-bg);  color: var(--warn-txt); }
+    .mtx-fail { background: var(--fail-bg);  color: var(--fail-txt); }
+    .mtx-na   { color: var(--muted); font-style: italic; font-size: 8px; }
+
+    /* CHARTS */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.8rem; }
+    .chart-block { border: 1px solid var(--rule); padding: 0.7rem 0.7rem 0.5rem; background: #fafcff; }
+    .chart-block-title {
+      font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate);
+      margin-bottom: 0.4rem; padding-bottom: 0.28rem;
+      border-bottom: 1px solid var(--rule);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .chart-block canvas { max-height: 190px; }
+
+    /* ── APPENDIX PAGE ── */
+    .appendix-page {
+      background: var(--white); max-width: 920px; margin: 2rem auto 0;
+      border-top: 4px solid var(--mid); box-shadow: 0 4px 32px rgba(13,27,42,0.18);
+    }
+    .appendix-header {
+      background: var(--slate); color: var(--white);
+      padding: 0.75rem 1.6rem; display: flex; justify-content: space-between; align-items: center;
+    }
+    .appendix-header h1 { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; }
+    .appendix-header p  { font-family: 'DM Mono', monospace; font-size: 8px; color: #90b0cc; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; }
+    .appendix-body { padding: 1.1rem 1.6rem 1.8rem; }
+    .appendix-meta { font-family: 'DM Mono', monospace; font-size: 8.5px; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule); }
+    .appendix-empty { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); padding: 1.5rem 0; text-align: center; }
+
+    /* MISC */
+    .check-group { display: flex; gap: 0.9rem; align-items: center; flex-wrap: wrap; padding-top: 0.3rem; }
+    .check-group label { display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Mono', monospace; font-size: 9.5px; color: var(--ink); cursor: pointer; }
+    .check-group input[type="checkbox"], .check-group input[type="radio"] { width: 11px; height: 11px; accent-color: var(--slate); cursor: pointer; }
+    .note { background: var(--light); border-left: 3px solid var(--mid); padding: 0.4rem 0.7rem; font-size: 9px; color: var(--muted); margin-bottom: 0.7rem; font-family: 'DM Mono', monospace; line-height: 1.55; }
+    .note.warn { background: #fff4f2; border-left-color: var(--accent); color: #7a2a1a; }
+    textarea { width: 100%; font-family: 'DM Mono', monospace; font-size: 10px; border: 1px solid var(--rule); background: var(--field-bg); color: var(--ink); padding: 0.45rem 0.65rem; resize: vertical; min-height: 48px; outline: none; line-height: 1.55; }
+    textarea:focus { border-color: var(--mid); }
+    .outcome-row { display: flex; gap: 1.4rem; align-items: center; flex-wrap: wrap; }
+    .outcome-row label { display: flex; align-items: center; gap: 0.4rem; font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; cursor: pointer; }
+    .outcome-row input[type="radio"] { width: 11px; height: 11px; accent-color: var(--slate); }
+    .signoff { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1.6rem; margin-top: 0.6rem; padding-top: 0.9rem; border-top: 1.5px solid var(--rule); }
+    .divider { border: none; border-top: 1px dashed var(--rule); margin: 0.9rem 0; }
+    .action-bar { display: flex; gap: 0.6rem; justify-content: flex-end; padding: 0.8rem 1.6rem 0.9rem; border-top: 1px solid var(--rule); background: var(--field-bg); }
+    .btn { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.4rem 1rem; border: 1.5px solid; cursor: pointer; transition: background 0.15s, color 0.15s; }
+    .btn-reset { background: transparent; border-color: var(--accent); color: var(--accent); }
+    .btn-reset:hover { background: var(--accent); color: var(--white); }
+    .btn-email { background: transparent; border-color: var(--mid); color: var(--mid); }
+    .btn-email:hover { background: var(--mid); color: var(--white); }
+    .btn-print { background: var(--slate); border-color: var(--slate); color: var(--white); }
+    .btn-print:hover { background: var(--navy); border-color: var(--navy); }
+
+    @page { size: A4; margin: 10mm 12mm; }
+    @media print {
+      body { background: white; padding: 0; font-size: 9px; }
+      article { box-shadow: none; max-width: 100%; border-top: 3px solid #1e3a5f; }
+      header, thead tr, .note, h2 span.badge, .matrix-block-title, .fms-toggle-bar,
+      .sub-section.dry > .sub-section-header,
+      .sub-section.wet > .sub-section-header,
+      .sub-section.con > .sub-section-header,
+      .appendix-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .calc.diff-ok, .calc.diff-warn, .calc.diff-fail, td.cat-req, td.fms-input-col, td.fms-diff-col,
+      .legend span, .mtx-ok, .mtx-warn, .mtx-fail, thead th.fms-col,
+      .chart-block { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .phase-tabs { display: none; }
+      .phase-panel { display: block !important; }
+      .sub-section-body { display: block !important; }
+      .sub-section-header .ssh-chevron, .sub-section-header .ssh-status { display: none; }
+      .conv-box, .action-bar { display: none; }
+      section { margin-bottom: 1rem; }
+      textarea { min-height: 40px; }
+      /* summary only in appendix — no main section to hide */
+      .appendix-page { page-break-before: always; break-before: page; box-shadow: none; max-width: 100%; margin: 0; }
+      .chart-grid { break-inside: avoid; }
+      .matrix-block { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<article>
+  <header>
+    <h1>Performance Periodic<br>Verification Report</h1>
+    <p>Elite Jet s.r.o. · Safety Management System<br>OM-B · Performance Audit Programme</p>
+  </header>
+  <main>
+
+    <!-- §0 IDENTITY -->
+    <section>
+      <h2><span class="badge">0</span> Aircraft &amp; Audit Identity</h2>
+      <div class="grid-4">
+        <div class="field">
+          <label>Aircraft Type</label>
+          <select id="acftType" onchange="filterReg()">
+            <option value="">— select —</option>
+            <option value="CL350">Challenger 3500</option>
+            <option value="GL5000">Global 5000</option>
+            <option value="XLSP">Citation XLS+</option>
+            <option value="LAT">Citation Latitude</option>
+            <option value="PC12E">PC-12/47E</option>
+            <option value="PC12G">PC-12/47G</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Registration</label>
+          <select id="acftReg"><option value="">— select type first —</option></select>
+        </div>
+        <div class="field">
+          <label>Date of Audit</label>
+          <input type="date" id="auditDate" onchange="autoAuditPeriod()">
+        </div>
+        <div class="field">
+          <label>Audit Period</label>
+          <div class="check-group" style="padding-top:0.5rem">
+            <label><input type="checkbox" id="p1" name="period"> JAN–JUN</label>
+            <label><input type="checkbox" id="p2" name="period"> JUL–DEC</label>
+          </div>
+        </div>
+        <div class="field span-2"><label>Auditor Name</label><input type="text" placeholder="Full name"></div>
+        <div class="field span-2"><label>EFB / ForeFlight Version</label><input type="text" placeholder="e.g. ForeFlight 16.4.1"></div>
+      </div>
+    </section>
+
+    <!-- §1 CONDITIONS -->
+    <section>
+      <h2><span class="badge">1</span> Scenario Conditions</h2>
+      <div class="note">Enter identical conditions into AFM, ForeFlight, and FMS. All distances in <strong>ft</strong>, all masses in <strong>lb</strong>.</div>
+
+      <div class="conv-box">
+        <div class="conv-title" onclick="toggleConv()" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;">
+          <span>⇄ Quick Unit Converter — for AFM / charts that publish in metric</span>
+          <span id="conv-chevron" style="font-size:9px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
+        </div>
+        <div id="conv-body" style="display:none;margin-top:0.45rem;">
+          <div class="conv-row"><label>metres → ft</label><input type="text" placeholder="m" oninput="conv('c_ft',parseFloat(this.value)*3.28084,0)"><span class="conv-unit">m</span><span class="conv-arrow">→</span><span class="conv-result" id="c_ft">—</span><span class="conv-result-unit">ft</span></div>
+          <div class="conv-row"><label>ft → metres</label><input type="text" placeholder="ft" oninput="conv('c_m2',parseFloat(this.value)*0.3048,1)"><span class="conv-unit">ft</span><span class="conv-arrow">→</span><span class="conv-result" id="c_m2">—</span><span class="conv-result-unit">m</span></div>
+          <div class="conv-row" style="margin-top:0.5rem"><label>kg → lb</label><input type="text" placeholder="kg" oninput="conv('c_lb',parseFloat(this.value)*2.20462,0)"><span class="conv-unit">kg</span><span class="conv-arrow">→</span><span class="conv-result" id="c_lb">—</span><span class="conv-result-unit">lb</span></div>
+          <div class="conv-row"><label>lb → kg</label><input type="text" placeholder="lb" oninput="conv('c_kg2',parseFloat(this.value)*0.453592,1)"><span class="conv-unit">lb</span><span class="conv-arrow">→</span><span class="conv-result" id="c_kg2">—</span><span class="conv-result-unit">kg</span></div>
+        </div>
+      </div>
+
+      <h3>Airport &amp; Runway</h3>
+      <div class="grid-4">
+        <div class="field span-2"><label>Airport (ICAO)</label><input type="text" placeholder="e.g. LZIB" style="text-transform:uppercase"></div>
+        <div class="field"><label>Runway Designator</label><input type="text" placeholder="e.g. 22"></div>
+        <div class="field"><label>Runway Condition</label>
+          <select id="rwyCond" onchange="updateCondNotes()">
+            <option value="dry">Dry</option><option value="wet">Wet</option><option value="contaminated">Contaminated</option>
+          </select>
+        </div>
+      </div>
+
+      <h3>Atmospheric Conditions</h3>
+      <div class="grid-4">
+        <div class="field"><label>OAT (°C)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>QNH (hPa)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>Pressure Alt (ft)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>Elevation (ft amsl)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>Wind Direction (°)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>Wind Speed (kt)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>Runway Slope (%)</label><input type="text" placeholder="+ up / − dn"></div>
+        <div class="field"><label>Anti-ice</label>
+          <div class="check-group" style="padding-top:0.5rem">
+            <label><input type="radio" name="antiice" value="off" checked> OFF</label>
+            <label><input type="radio" name="antiice" value="eng"> ENG</label>
+            <label><input type="radio" name="antiice" value="all"> ALL</label>
+          </div>
+        </div>
+      </div>
+
+      <h3>Weights</h3>
+      <div class="grid-4">
+        <div class="field"><label>Take-off Mass (lb)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>Landing Mass (lb)</label><input type="text" placeholder="——"></div>
+        <div class="field"><label>Flap Setting — T/O</label><input type="text" placeholder="e.g. 8° / FLAP 1"></div>
+        <div class="field"><label>Flap Setting — LDG</label><input type="text" placeholder="e.g. 30° / FULL"></div>
+      </div>
+      <div id="condNote" class="note warn" style="display:none;margin-top:0.7rem"></div>
+    </section>
+
+    <!-- §2 COMPARISON -->
+    <section>
+      <h2><span class="badge">2</span> Calculation Comparison</h2>
+
+      <!-- FMS TOGGLE -->
+      <div class="fms-toggle-bar">
+        <label><input type="checkbox" id="fmsToggle" onchange="toggleFMS()"> Include FMS data (optional)</label>
+        <span class="fms-hint">— enable to add FMS column to all tables and summary</span>
+      </div>
+
+      <div class="legend">
+        <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);">Diff colour key:</span>
+        <span class="l-ok">✓ ≤50 ft / ≤1 kt</span>
+        <span class="l-warn">⚠ 51–100 ft / 1–2 kt</span>
+        <span class="l-fail">✗ &gt;100 ft / &gt;2 kt</span>
+        <span class="l-fms">◆ FMS column</span>
+      </div>
+
+      <div class="phase-tabs">
+        <button class="active" onclick="switchPhase('to',this)">▲ Takeoff</button>
+        <button onclick="switchPhase('ldg',this)">▼ Landing</button>
+      </div>
+
+      <!-- ══ TAKEOFF ══ -->
+      <div id="panel-to" class="phase-panel active">
+
+        <div class="sub-section dry">
+          <div class="sub-section-header collapsed" onclick="toggleSub(this)">
+            <div class="ssh-label"><span class="ssh-icon">☀</span> Distances — Dry AFM</div>
+            <span class="ssh-status" id="status_to_dry"></span>
+            <span class="ssh-chevron">▼</span>
+          </div>
+          <div class="sub-section-body">
+        <table>
+          <thead><tr>
+            <th>Distance</th>
+            <th>AFM (Dry, ft)</th>
+            <th>ForeFlight (Dry, ft)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+            <th class="fms-col fms-hidden">FMS (Dry, ft)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+            <th class="fms-col fms-hidden">Diff FMS−FF<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Takeoff Run</td>
+              <td><input type="text" id="to_dry_afm_TORA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_dry_ff_TORA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_dry_dAF_TORA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_dry_fms_TORA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_dry_dMA_TORA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_dry_dMF_TORA">—</span></td>
+            </tr>
+            <tr>
+              <td>Takeoff Distance</td>
+              <td><input type="text" id="to_dry_afm_TODA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_dry_ff_TODA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_dry_dAF_TODA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_dry_fms_TODA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_dry_dMA_TODA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_dry_dMF_TODA">—</span></td>
+            </tr>
+            <tr>
+              <td>Accelerate-Stop</td>
+              <td><input type="text" id="to_dry_afm_ASDA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_dry_ff_ASDA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_dry_dAF_ASDA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_dry_fms_ASDA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_dry_dMA_ASDA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_dry_dMF_ASDA">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+          </div><!-- /sub-section-body dry -->
+        </div><!-- /sub-section dry -->
+
+        <div class="sub-section wet" style="margin-top:0.6rem">
+          <div class="sub-section-header collapsed" onclick="toggleSub(this)">
+            <div class="ssh-label"><span class="ssh-icon">💧</span> Distances — Wet AFM</div>
+            <span class="ssh-status" id="status_to_wet"></span>
+            <span class="ssh-chevron">▼</span>
+          </div>
+          <div class="sub-section-body">
+            <div class="note" style="margin:0.5rem 0 0.5rem">Wet AFM distances include AFM wet-runway corrections per aircraft AFM supplement.</div>
+        <table>
+          <thead><tr>
+            <th>Distance</th>
+            <th>AFM (Wet, ft)</th>
+            <th>ForeFlight (Wet, ft)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+            <th class="fms-col fms-hidden">FMS (Wet, ft)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM</th>
+            <th class="fms-col fms-hidden">Diff FMS−FF</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Takeoff Run</td>
+              <td><input type="text" id="to_wet_afm_TORA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_wet_ff_TORA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_wet_dAF_TORA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_wet_fms_TORA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_wet_dMA_TORA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_wet_dMF_TORA">—</span></td>
+            </tr>
+            <tr>
+              <td>Takeoff Distance</td>
+              <td><input type="text" id="to_wet_afm_TODA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_wet_ff_TODA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_wet_dAF_TODA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_wet_fms_TODA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_wet_dMA_TODA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_wet_dMF_TODA">—</span></td>
+            </tr>
+            <tr>
+              <td>Accelerate-Stop</td>
+              <td><input type="text" id="to_wet_afm_ASDA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_wet_ff_ASDA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_wet_dAF_ASDA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_wet_fms_ASDA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_wet_dMA_ASDA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_wet_dMF_ASDA">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+          </div><!-- /sub-section-body wet -->
+        </div><!-- /sub-section wet -->
+
+        <div class="sub-section con" style="margin-top:0.6rem">
+          <div class="sub-section-header collapsed" onclick="toggleSub(this)">
+            <div class="ssh-label"><span class="ssh-icon">⚠</span> Distances — Contaminated AFM</div>
+            <span class="ssh-status" id="status_to_con"></span>
+            <span class="ssh-chevron">▼</span>
+          </div>
+          <div class="sub-section-body">
+            <div class="field" style="margin:0.5rem 0 0.6rem;max-width:280px">
+          <label>Contamination Condition (ForeFlight)</label>
+          <select id="contamCond_to" style="font-family:'DM Mono',monospace;font-size:10.5px;border:none;border-bottom:1px solid var(--rule);background:transparent;color:var(--ink);padding:0.2rem 0.15rem;width:100%;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;">
+            <option value="">— select type first —</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Distance</th>
+            <th>AFM (Contam, ft)</th>
+            <th>ForeFlight (Contam, ft)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+            <th class="fms-col fms-hidden">FMS (Contam, ft)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM</th>
+            <th class="fms-col fms-hidden">Diff FMS−FF</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Takeoff Run</td>
+              <td><input type="text" id="to_con_afm_TORA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_con_ff_TORA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_con_dAF_TORA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_con_fms_TORA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_con_dMA_TORA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_con_dMF_TORA">—</span></td>
+            </tr>
+            <tr>
+              <td>Takeoff Distance</td>
+              <td><input type="text" id="to_con_afm_TODA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_con_ff_TODA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_con_dAF_TODA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_con_fms_TODA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_con_dMA_TODA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_con_dMF_TODA">—</span></td>
+            </tr>
+            <tr>
+              <td>Accelerate-Stop</td>
+              <td><input type="text" id="to_con_afm_ASDA" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="to_con_ff_ASDA"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="to_con_dAF_ASDA">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="to_con_fms_ASDA" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_con_dMA_ASDA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="to_con_dMF_ASDA">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+          </div><!-- /sub-section-body con -->
+        </div><!-- /sub-section con -->
+
+        <hr class="divider">
+        <h3>Decision / Rotation / Safety Speeds</h3>
+        <table>
+          <thead><tr>
+            <th>Speed</th><th>AFM (kt)</th><th>ForeFlight (kt)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±2 kt</span></th>
+            <th class="fms-col fms-hidden">FMS (kt)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM</th>
+            <th class="fms-col fms-hidden">Diff FMS−FF</th>
+            <th>Notes</th>
+          </tr></thead>
+          <tbody id="to-speeds-body"></tbody>
+        </table>
+      </div><!-- /panel-to -->
+
+      <!-- ══ LANDING ══ -->
+      <div id="panel-ldg" class="phase-panel">
+
+        <div class="sub-section dry">
+          <div class="sub-section-header collapsed" onclick="toggleSub(this)">
+            <div class="ssh-label"><span class="ssh-icon">☀</span> Distances — Dry</div>
+            <span class="ssh-status" id="status_ldg_dry"></span>
+            <span class="ssh-chevron">▼</span>
+          </div>
+          <div class="sub-section-body">
+            <div class="note" id="ldg_dry_note" style="margin:0.5rem 0 0.5rem">CAT regulatory field length: AFM dry landing distance ÷ 0.60 (60% rule, CAT.POL.A.225 — Performance Class A).</div>
+        <table>
+          <thead><tr>
+            <th>Distance</th>
+            <th>AFM (Dry, ft)</th>
+            <th>ForeFlight (Dry, ft)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+            <th class="fms-col fms-hidden">FMS (Dry, ft)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM</th>
+            <th class="fms-col fms-hidden">Diff FMS−FF</th>
+            <th id="ldg_dry_cat_hdr">CAT Required (ft)</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Landing Distance</td>
+              <td><input type="text" id="ldg_dry_afm" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="ldg_dry_ff"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="ldg_dry_dAF">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="ldg_dry_fms" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="ldg_dry_dMA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="ldg_dry_dMF">—</span></td>
+              <td class="cat-req"><span class="calc req-val" id="ldg_dry_cat">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+          </div><!-- /sub-section-body dry -->
+        </div><!-- /sub-section dry -->
+
+        <div class="sub-section wet" style="margin-top:0.6rem">
+          <div class="sub-section-header collapsed" onclick="toggleSub(this)">
+            <div class="ssh-label"><span class="ssh-icon">💧</span> Distances — Wet</div>
+            <span class="ssh-status" id="status_ldg_wet"></span>
+            <span class="ssh-chevron">▼</span>
+          </div>
+          <div class="sub-section-body">
+            <div class="note" id="ldg_wet_note" style="margin:0.5rem 0 0.5rem">AFM wet landing distance ÷ 0.60 (CAT.POL.A.225 — Performance Class A). Use AFM wet-runway certified value.</div>
+        <table>
+          <thead><tr>
+            <th>Distance</th>
+            <th>AFM (Wet, ft)</th>
+            <th>ForeFlight (Wet, ft)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+            <th class="fms-col fms-hidden">FMS (Wet, ft)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM</th>
+            <th class="fms-col fms-hidden">Diff FMS−FF</th>
+            <th id="ldg_wet_cat_hdr">CAT Required (ft)</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Landing Distance</td>
+              <td><input type="text" id="ldg_wet_afm" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="ldg_wet_ff"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="ldg_wet_dAF">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="ldg_wet_fms" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="ldg_wet_dMA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="ldg_wet_dMF">—</span></td>
+              <td class="cat-req"><span class="calc req-val" id="ldg_wet_cat">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+          </div><!-- /sub-section-body wet -->
+        </div><!-- /sub-section wet -->
+
+        <div class="sub-section con" style="margin-top:0.6rem">
+          <div class="sub-section-header collapsed" onclick="toggleSub(this)">
+            <div class="ssh-label"><span class="ssh-icon">⚠</span> Distances — Contaminated</div>
+            <span class="ssh-status" id="status_ldg_con"></span>
+            <span class="ssh-chevron">▼</span>
+          </div>
+          <div class="sub-section-body">
+        <table>
+          <thead><tr>
+            <th>Distance</th>
+            <th>AFM (Contam, ft)</th>
+            <th>ForeFlight (Contam, ft)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±100 ft</span></th>
+            <th class="fms-col fms-hidden">FMS (Contam, ft)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM</th>
+            <th class="fms-col fms-hidden">Diff FMS−FF</th>
+            <th id="ldg_con_cat_hdr">CAT Required (ft)</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Landing Distance</td>
+              <td><input type="text" id="ldg_con_afm" placeholder="ft" oninput="recalcAll()"></td>
+              <td><input type="text" id="ldg_con_ff"  placeholder="ft" oninput="recalcAll()"></td>
+              <td><span class="calc empty" id="ldg_con_dAF">—</span></td>
+              <td class="fms-input-col fms-hidden"><input type="text" id="ldg_con_fms" placeholder="ft" oninput="recalcAll()"></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="ldg_con_dMA">—</span></td>
+              <td class="fms-diff-col fms-hidden"><span class="calc empty" id="ldg_con_dMF">—</span></td>
+              <td class="cat-req"><span class="calc req-val" id="ldg_con_cat">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="grid-2" style="margin-top:0.5rem">
+          <div class="field">
+            <label>Contamination Condition</label>
+            <select id="contamCond" style="font-family:'DM Mono',monospace;font-size:10.5px;border:none;border-bottom:1px solid var(--rule);background:transparent;color:var(--ink);padding:0.2rem 0.15rem;width:100%;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;">
+              <option value="">— select type first —</option>
+            </select>
+          </div>
+          <div class="field"><label>Braking Action / RCAM Code</label><input type="text" placeholder="e.g. Good to Medium / RCAM 4"></div>
+        </div>
+          </div><!-- /sub-section-body con -->
+        </div><!-- /sub-section con -->
+
+        <hr class="divider">
+        <h3>Approach &amp; Landing Speeds</h3>
+        <table>
+          <thead><tr>
+            <th>Speed</th><th>AFM (kt)</th><th>ForeFlight (kt)</th>
+            <th>Diff FF−AFM<br><span style="opacity:0.7;font-size:7px">Tol. ±2 kt</span></th>
+            <th class="fms-col fms-hidden">FMS (kt)</th>
+            <th class="fms-col fms-hidden">Diff FMS−AFM</th>
+            <th class="fms-col fms-hidden">Diff FMS−FF</th>
+            <th>Notes</th>
+          </tr></thead>
+          <tbody id="ldg-speeds-body"></tbody>
+        </table>
+      </div><!-- /panel-ldg -->
+    </section>
+
+    <!-- §3 FINDINGS -->
+    <section>
+      <h2><span class="badge">3</span> Findings &amp; Observations</h2>
+      <textarea placeholder="Record any discrepancies, anomalies, or observations — takeoff and landing. State N/A if none found."></textarea>
+    </section>
+
+    <!-- §4 OUTCOME -->
+    <section>
+      <h2><span class="badge">4</span> Audit Outcome</h2>
+      <div class="outcome-row">
+        <label><input type="radio" name="outcome" value="pass"> PASS — Results within acceptable tolerance</label>
+        <label><input type="radio" name="outcome" value="fail"> FAIL — Discrepancy exceeds tolerance; corrective action required</label>
+        <label><input type="radio" name="outcome" value="pending"> PENDING — Further investigation required</label>
+      </div>
+    </section>
+
+    <!-- §5 SIGN-OFF -->
+    <section>
+      <h2><span class="badge">5</span> Sign-off</h2>
+      <div class="signoff">
+        <div class="field"><label>Auditor Signature</label><input type="text" placeholder="Signature / stamp"></div>
+        <div class="field"><label>Date Completed</label><input type="date"></div>
+        <div class="field"><label>Reviewed by (Safety Manager)</label><input type="text" placeholder="Name / signature"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="action-bar">
+    <button class="btn btn-reset" onclick="resetForm()">⟳ Reset Form</button>
+    <button class="btn btn-email" onclick="sendEmail()">✉ Send via Email</button>
+    <button class="btn btn-print" onclick="window.print()">⎙ Print / PDF</button>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════════════════
+     APPENDIX — standalone page for print
+══════════════════════════════════════════════════ -->
+<div class="appendix-page" id="appendix-page">
+  <div class="appendix-header">
+    <h1>Appendix A — Summary Matrix &amp; Visual Comparison</h1>
+    <p>Elite Jet s.r.o. · Performance Verification</p>
+  </div>
+  <div class="appendix-body">
+    <div class="appendix-meta" id="appendix-meta">Aircraft: — &nbsp;|&nbsp; Date: — &nbsp;|&nbsp; Generated from §2 data</div>
+    <div id="appendix-matrix-grid" class="matrix-grid"></div>
+    <h3 style="margin-top:1rem;font-family:'DM Mono',monospace;font-size:8px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:#2e5f8a;padding-left:0.4rem;border-left:2px solid #2e5f8a;margin-bottom:0.5rem;">Visual Comparison — Distances (ft)</h3>
+    <div id="appendix-chart-grid" class="chart-grid"></div>
+  </div>
+</div>
+
+<script>
+  /* ════════════════════════════════════════════════
+     FLEET & CONTAMINATION OPTIONS
+  ════════════════════════════════════════════════ */
+  const fleet = {
+    CL350:  { regs:['9H-LRSR'], jet:true  },
+    GL5000: { regs:['OM-NTN'],  jet:true  },
+    XLSP:   { regs:['OM-YKS','OM-FLY'], jet:true },
+    LAT:    { regs:['OM-LAT'],  jet:true  },
+    PC12E:  { regs:['OM-TVV'],  jet:false },
+    PC12G:  { regs:['OM-TVG'],  jet:false },
+  };
+
+  const contamOptions_TO = {
+    CL350:  ['Compact Snow','0.125in Standing Water','0.25in Standing Water','2in Dry Snow','0.25in Wet Snow','0.5in Wet Snow','Ice'],
+    GL5000: ['Ice','Compacted Snow','Standing Water 3.2mm / 0.125in','Standing Water 6.4mm / 0.25in','Slush 3.8mm / 0.15in','Slush 7.6mm / 0.30in','Wet Snow 7.6mm / 0.30in','Wet Snow 15.2mm / 0.60in','Dry Snow 15.2mm / 0.60in','Dry Snow 30.5mm / 1.2in'],
+    XLSP:   ['0.125in Water (RCAM-5)','0.2in Water (RCAM-2)','0.3in Water (RCAM-2)','0.4in Water (RCAM-2)','0.5in Water (RCAM-2)','0.125in Slush (RCAM-5)','0.2in Slush (RCAM-2)','0.3in Slush (RCAM-2)','0.4in Slush (RCAM-2)','0.5in Slush (RCAM-2)','1in Snow (RCAM-3)','2in Snow (RCAM-3)','Compact Snow (RCAM-3)','Wet Ice (RCAM-0)'],
+    LAT:    ['0.125in Water','0.2in Water','0.3in Water','0.4in Water','0.5in Water','0.125in Slush','0.2in Slush','0.3in Slush','0.4in Slush','0.5in Slush','0.125in Wet Snow','0.2in Wet Snow','0.3in Wet Snow','0.4in Wet Snow','0.5in Wet Snow','1in Dry Snow','2in Dry Snow','Compact Snow','Ice'],
+    PC12E:  ['0.125in Water','0.2in Water','0.3in Water','0.4in Water','0.5in Water','0.125in Slush','0.2in Slush','0.3in Slush','0.4in Slush','0.5in Slush','1in Snow','2in Snow','Compact Snow','Ice','RCC 6 - Dry','RCC 5 - Good','RCC 4 - Good/Medium','RCC 3 - Medium','RCC 2 - Medium/Poor','RCC 1 - Poor'],
+    PC12G:  ['0.125in Water','0.2in Water','0.3in Water','0.4in Water','0.5in Water','0.125in Slush','0.2in Slush','0.3in Slush','0.4in Slush','0.5in Slush','1in Snow','2in Snow','Compact Snow','Ice','RCC 6 - Dry','RCC 5 - Good','RCC 4 - Good/Medium','RCC 3 - Medium','RCC 2 - Medium/Poor','RCC 1 - Poor'],
+  };
+
+  const contamOptions_LDG = {
+    CL350:  ['Ice','RwyCC 6','RwyCC 5','RwyCC 4','RwyCC 3','RwyCC 2','RwyCC 1'],
+    GL5000: ['Ice','RCC 6','RCC 5','RCC 4','RCC 3','RCC 2','RCC 1','Standing Water or Equiv.','Loose Snow','Compact Snow'],
+    XLSP:   ['Dry (RCAM-6)','0.125in Water (RCAM-5)','0.2in Water (RCAM-2)','0.3in Water (RCAM-2)','0.4in Water (RCAM-2)','0.5in Water (RCAM-2)','0.125in Slush (RCAM-5)','0.2in Slush (RCAM-2)','0.3in Slush (RCAM-2)','0.4in Slush (RCAM-2)','0.5in Slush (RCAM-2)','1in Snow (RCAM-3)','2in Snow (RCAM-3)','Compact Snow (RCAM-3)','Wet Ice (RCAM-0)'],
+    LAT:    ['Ice','RCC 6','RCC 5','RCC 4','RCC 3','RCC 2','RCC 1','0.125in Water','0.2in Water','0.3in Water','0.4in Water','0.5in Water','0.125in Slush','0.2in Slush','0.3in Slush','0.4in Slush','0.5in Slush','0.125in Wet Snow','0.2in Wet Snow','0.3in Wet Snow','0.4in Wet Snow','0.5in Wet Snow','1in Dry Snow','2in Dry Snow','Compact Snow'],
+    PC12E:  ['0.125in Water','0.2in Water','0.3in Water','0.4in Water','0.5in Water','0.125in Slush','0.2in Slush','0.3in Slush','0.4in Slush','0.5in Slush','1in Snow','2in Snow','Compact Snow','Ice','RCC 6 - Dry','RCC 5 - Good','RCC 4 - Good/Medium','RCC 3 - Medium','RCC 2 - Medium/Poor','RCC 1 - Poor'],
+    PC12G:  ['0.125in Water','0.2in Water','0.3in Water','0.4in Water','0.5in Water','0.125in Slush','0.2in Slush','0.3in Slush','0.4in Slush','0.5in Slush','1in Snow','2in Snow','Compact Snow','Ice','RCC 6 - Dry','RCC 5 - Good','RCC 4 - Good/Medium','RCC 3 - Medium','RCC 2 - Medium/Poor','RCC 1 - Poor'],
+  };
+
+  /* ════════════════════════════════════════════════
+     HELPERS
+  ════════════════════════════════════════════════ */
+  function conv(id, val, dec) {
+    const el = document.getElementById(id);
+    el.textContent = isNaN(val) ? '—' : val.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+  }
+
+  function v(id) {
+    const el = document.getElementById(id);
+    if (!el) return NaN;
+    const n = parseFloat(el.value);
+    return isNaN(n) ? NaN : n;
+  }
+
+  function fmtN(n, dec=0) {
+    if (isNaN(n)) return null;
+    const s = Math.abs(n).toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+    return (n < 0 ? '−' : '+') + s;
+  }
+
+  function fmtPos(n) {
+    if (isNaN(n)) return null;
+    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+  }
+
+  function setCalc(id, text, cls) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text !== null ? text : '—';
+    el.className = 'calc' + (text === null ? ' empty' : '') + (cls ? ' ' + cls : '');
+  }
+
+  function diffClass(diff, tol) {
+    const abs = Math.abs(diff);
+    if (abs <= tol * 0.5) return 'diff-ok';
+    if (abs <= tol)       return 'diff-warn';
+    return 'diff-fail';
+  }
+
+  function fmsEnabled() { return document.getElementById('fmsToggle').checked; }
+
+  /* ════════════════════════════════════════════════
+     FMS TOGGLE
+  ════════════════════════════════════════════════ */
+  function toggleFMS() {
+    const show = fmsEnabled();
+    document.querySelectorAll('.fms-hidden').forEach(el => {
+      if (show) el.classList.remove('fms-hidden');
+      else el.classList.add('fms-hidden-off');
+    });
+    document.querySelectorAll('.fms-hidden-off').forEach(el => {
+      if (!show) { el.classList.remove('fms-hidden-off'); el.classList.add('fms-hidden'); }
+    });
+    recalcAll();
+  }
+
+  /* ════════════════════════════════════════════════
+     SPEEDS
+  ════════════════════════════════════════════════ */
+  function toSpeeds(type) {
+    if (!type) return [];
+    if (fleet[type].jet) return [
+      { id:'V1', label:'V1 — Decision Speed',      note:'OEI — go/stop decision' },
+      { id:'VR', label:'VR — Rotation Speed',       note:'' },
+      { id:'V2', label:'V2 — Takeoff Safety Speed', note:'OEI at 35 ft screen' },
+    ];
+    return [
+      { id:'VR', label:'VR — Rotation Speed', note:'' },
+      { id:'V2', label:'V2 — (N/A turboprop)', note:'No V2 defined per AFM', na:true },
+    ];
+  }
+
+  function ldgSpeeds(type) {
+    if (!type) return [];
+    return [
+      { id:'VREF', label:'VREF — Reference Speed', note:'Threshold speed (1.23 VS₁G)' },
+      { id:'VAPP', label:'VAPP — Approach Speed',  note:'VREF + additive corrections' },
+    ];
+  }
+
+  function renderSpeeds(bodyId, speeds) {
+    const tbody = document.getElementById(bodyId);
+    tbody.innerHTML = '';
+    const fmsVis = fmsEnabled();
+    if (!speeds.length) {
+      tbody.innerHTML = `<tr><td colspan="8" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);padding:0.5rem 0.55rem;">Select aircraft type in §0 to populate speeds.</td></tr>`;
+      return;
+    }
+    speeds.forEach(s => {
+      const ms  = s.na ? 'color:var(--muted);font-style:italic;' : '';
+      const dis = s.na ? 'disabled' : '';
+      const ph  = s.na ? 'N/A' : 'kt';
+      const fmsHide = fmsVis ? '' : 'fms-hidden';
+      const afmId  = `spd_afm_${bodyId}_${s.id}`;
+      const ffId   = `spd_ff_${bodyId}_${s.id}`;
+      const fmsId  = `spd_fms_${bodyId}_${s.id}`;
+      const dAFId  = `spd_dAF_${bodyId}_${s.id}`;
+      const dMAId  = `spd_dMA_${bodyId}_${s.id}`;
+      const dMFId  = `spd_dMF_${bodyId}_${s.id}`;
+      const noteStyle = `font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);border:none;border-bottom:1px solid var(--rule);background:transparent;width:100%;outline:none;`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-size:9px;letter-spacing:0.08em;${ms}">${s.label}</td>
+        <td><input type="text" id="${afmId}" placeholder="${ph}" ${dis} oninput="recalcAll()"></td>
+        <td><input type="text" id="${ffId}"  placeholder="${ph}" ${dis} oninput="recalcAll()"></td>
+        <td><span class="calc empty" id="${dAFId}">—</span></td>
+        <td class="fms-input-col ${fmsHide}"><input type="text" id="${fmsId}" placeholder="${ph}" ${dis} oninput="recalcAll()"></td>
+        <td class="fms-diff-col ${fmsHide}"><span class="calc empty" id="${dMAId}">—</span></td>
+        <td class="fms-diff-col ${fmsHide}"><span class="calc empty" id="${dMFId}">—</span></td>
+        <td><input type="text" placeholder="${s.note}" style="${noteStyle}"></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     DISTANCE ROW CALC — 3-way
+  ════════════════════════════════════════════════ */
+  function calcRow3(afmId, ffId, fmsId, dAFId, dMAId, dMFId, catId, catFactor, tol) {
+    const afm = v(afmId), ff = v(ffId), fms = v(fmsId);
+    const t = tol || 100;
+
+    // FF vs AFM
+    if (!isNaN(afm) && !isNaN(ff)) {
+      const d = ff - afm;
+      setCalc(dAFId, fmtN(d), diffClass(d, t));
+    } else setCalc(dAFId, null, null);
+
+    if (fmsEnabled()) {
+      // FMS vs AFM
+      if (!isNaN(afm) && !isNaN(fms)) {
+        const d = fms - afm;
+        setCalc(dMAId, fmtN(d), diffClass(d, t));
+      } else setCalc(dMAId, null, null);
+      // FMS vs FF
+      if (!isNaN(ff) && !isNaN(fms)) {
+        const d = fms - ff;
+        setCalc(dMFId, fmtN(d), diffClass(d, t));
+      } else setCalc(dMFId, null, null);
+    }
+
+    // CAT required (landing only)
+    if (catId && catFactor && !isNaN(afm)) {
+      setCalc(catId, fmtPos(afm / catFactor), 'req-val');
+    } else if (catId) {
+      setCalc(catId, null, 'req-val');
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     LANDING FACTOR
+  ════════════════════════════════════════════════ */
+  function getLdgFactor() {
+    const type = document.getElementById('acftType').value;
+    return (type === 'PC12E' || type === 'PC12G') ? 0.70 : 0.60;
+  }
+
+  function updateLdgHeaders() {
+    const type = document.getElementById('acftType').value;
+    const isPC12 = (type === 'PC12E' || type === 'PC12G');
+    const fac = isPC12 ? '÷0.70' : '÷0.60';
+    const reg = isPC12 ? 'CAT.POL.A.315 — Performance Class B' : 'CAT.POL.A.225 — Performance Class A';
+    ['ldg_dry_cat_hdr','ldg_wet_cat_hdr','ldg_con_cat_hdr'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `CAT Required<br>${fac} (ft)`;
+    });
+    const dn = document.getElementById('ldg_dry_note');
+    const wn = document.getElementById('ldg_wet_note');
+    if (dn) dn.textContent = `CAT regulatory field length: AFM dry landing distance ${fac} (${isPC12?'70%':'60%'} rule, ${reg}).`;
+    if (wn) wn.textContent = `AFM wet landing distance ${fac} (${reg}). Use AFM wet-runway certified value.`;
+  }
+
+  /* ════════════════════════════════════════════════
+     RECALC ALL
+  ════════════════════════════════════════════════ */
+  function recalcAll() {
+    const LF = getLdgFactor();
+
+    // T/O distances — no CAT factor
+    ['dry','wet','con'].forEach(sfc => {
+      ['TORA','TODA','ASDA'].forEach(seg => {
+        calcRow3(
+          `to_${sfc}_afm_${seg}`, `to_${sfc}_ff_${seg}`, `to_${sfc}_fms_${seg}`,
+          `to_${sfc}_dAF_${seg}`, `to_${sfc}_dMA_${seg}`, `to_${sfc}_dMF_${seg}`,
+          null, null, 100
+        );
+      });
+    });
+
+    // LDG distances — with CAT factor
+    ['dry','wet','con'].forEach(sfc => {
+      calcRow3(
+        `ldg_${sfc}_afm`, `ldg_${sfc}_ff`, `ldg_${sfc}_fms`,
+        `ldg_${sfc}_dAF`, `ldg_${sfc}_dMA`, `ldg_${sfc}_dMF`,
+        `ldg_${sfc}_cat`, LF, 100
+      );
+    });
+
+    // Speeds
+    recalcSpeeds();
+
+    // Summary + charts
+    buildSummary();
+  }
+
+  /* ════════════════════════════════════════════════
+     SPEEDS RECALC
+  ════════════════════════════════════════════════ */
+  function recalcSpeeds() {
+    ['to-speeds-body','ldg-speeds-body'].forEach(bodyId => {
+      const tbody = document.getElementById(bodyId);
+      if (!tbody) return;
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 4) return;
+        const afmIn = cells[1].querySelector('input');
+        const ffIn  = cells[2].querySelector('input');
+        const dAF   = cells[3].querySelector('.calc');
+        if (!afmIn || !ffIn || !dAF || afmIn.disabled) return;
+        const afm = parseFloat(afmIn.value), ff = parseFloat(ffIn.value);
+        if (!isNaN(afm) && !isNaN(ff)) {
+          const d = ff - afm;
+          dAF.textContent = fmtN(d, 0);
+          dAF.className = 'calc ' + diffClass(d, 2);
+        } else { dAF.textContent = '—'; dAF.className = 'calc empty'; }
+
+        if (fmsEnabled() && cells.length >= 7) {
+          const fmsIn = cells[4].querySelector('input');
+          const dMA   = cells[5].querySelector('.calc');
+          const dMF   = cells[6].querySelector('.calc');
+          const fms = fmsIn ? parseFloat(fmsIn.value) : NaN;
+          if (!isNaN(afm) && !isNaN(fms) && dMA) { const d = fms-afm; dMA.textContent=fmtN(d,0); dMA.className='calc '+diffClass(d,2); }
+          else if (dMA) { dMA.textContent='—'; dMA.className='calc empty'; }
+          if (!isNaN(ff) && !isNaN(fms) && dMF) { const d = fms-ff; dMF.textContent=fmtN(d,0); dMF.className='calc '+diffClass(d,2); }
+          else if (dMF) { dMF.textContent='—'; dMF.className='calc empty'; }
+        }
+      });
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     COLLAPSIBLE SUB-SECTIONS
+  ════════════════════════════════════════════════ */
+  function toggleSub(header) {
+    const body = header.nextElementSibling;
+    const collapsed = !body.classList.contains('open');
+    body.classList.toggle('open', collapsed);
+    header.classList.toggle('collapsed', !collapsed);
+  }
+
+  /* ════════════════════════════════════════════════
+     SUMMARY MATRIX + CHARTS (dual: preview + appendix)
+  ════════════════════════════════════════════════ */
+  const chartInstances = {};
+
+  const DIST_DEFS = [
+    { key:'to_dry', label:'T/O Dry',    segs:[{id:'TORA',lbl:'Takeoff Run'},{id:'TODA',lbl:'Takeoff Distance'},{id:'ASDA',lbl:'Accel-Stop'}] },
+    { key:'to_wet', label:'T/O Wet',    segs:[{id:'TORA',lbl:'Takeoff Run'},{id:'TODA',lbl:'Takeoff Distance'},{id:'ASDA',lbl:'Accel-Stop'}] },
+    { key:'to_con', label:'T/O Contam', segs:[{id:'TORA',lbl:'Takeoff Run'},{id:'TODA',lbl:'Takeoff Distance'},{id:'ASDA',lbl:'Accel-Stop'}] },
+    { key:'ldg_dry',label:'LDG Dry',    segs:[{id:'',lbl:'Landing Distance'}] },
+    { key:'ldg_wet',label:'LDG Wet',    segs:[{id:'',lbl:'Landing Distance'}] },
+    { key:'ldg_con',label:'LDG Contam', segs:[{id:'',lbl:'Landing Distance'}] },
+  ];
+
+  function getDistVal(key, seg, src) {
+    // key = 'to_dry', seg = 'TORA' or '', src = 'afm'|'ff'|'fms'
+    const id = seg ? `${key}_${src}_${seg}` : `${key}_${src}`;
+    return v(id);
+  }
+
+  function mtxDiff(a, b, tol) {
+    if (isNaN(a) || isNaN(b)) return '<span class="mtx-na">—</span>';
+    const d = b - a;
+    const cls = Math.abs(d) <= tol*0.5 ? 'mtx-ok' : Math.abs(d) <= tol ? 'mtx-warn' : 'mtx-fail';
+    const s = Math.round(Math.abs(d)).toString();
+    return `<span class="mtx-diff ${cls}">${d>=0?'+':'-'}${s}</span>`;
+  }
+
+  function buildSummary() {
+    const hasFMS = fmsEnabled();
+
+    // update appendix meta
+    const reg  = document.getElementById('acftReg').value || '—';
+    const date = document.getElementById('auditDate').value;
+    const fmtDate = date ? new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const meta = document.getElementById('appendix-meta');
+    if (meta) meta.textContent = `Aircraft: ${reg}  |  Date: ${fmtDate}  |  ${hasFMS ? 'Three-source comparison: AFM · ForeFlight · FMS' : 'Two-source comparison: AFM · ForeFlight'}`;
+
+    // grids to populate (appendix only)
+    const grids    = ['appendix-matrix-grid'];
+    const cgrids   = ['appendix-chart-grid'];
+
+    // destroy old charts
+    Object.values(chartInstances).forEach(c => c.destroy());
+    Object.keys(chartInstances).forEach(k => delete chartInstances[k]);
+
+    grids.forEach(gid => { const el=document.getElementById(gid); if(el) el.innerHTML=''; });
+    cgrids.forEach(gid => { const el=document.getElementById(gid); if(el) el.innerHTML=''; });
+
+    // colour scheme — distinct and accessible
+    const C = {
+      afm:  { bar:'rgba(13,27,42,0.88)',   border:'#0d1b2a',   label:'AFM' },
+      ff:   { bar:'rgba(26,107,154,0.82)',  border:'#1a6b9a',   label:'ForeFlight' },
+      fms:  { bar:'rgba(123,63,160,0.80)',  border:'#7b3fa0',   label:'FMS' },
+      tol:  'rgba(200,57,27,0.18)',  // tolerance band fill
+      tolBorder: 'rgba(200,57,27,0.5)',
+    };
+
+    let anyData = false;
+
+    DIST_DEFS.forEach(def => {
+      const rows = def.segs.map(seg => {
+        const afm = getDistVal(def.key, seg.id, 'afm');
+        const ff  = getDistVal(def.key, seg.id, 'ff');
+        const fms = hasFMS ? getDistVal(def.key, seg.id, 'fms') : NaN;
+        return { lbl: seg.lbl, afm, ff, fms };
+      });
+      const hasAny = rows.some(r => !isNaN(r.afm) || !isNaN(r.ff) || !isNaN(r.fms));
+      if (!hasAny) return;
+      anyData = true;
+
+      // surface colour for matrix header
+      const sfcCls = def.key.includes('wet') ? '#1e3a5f' : def.key.includes('con') ? '#6b3800' : '#145a2e';
+
+      // ── MATRIX BLOCK ──
+      const fmsCols = hasFMS ? `<th>FMS (ft)</th><th>FMS−AFM</th><th>FMS−FF</th>` : '';
+      const rows_html = rows.map(r => {
+        const aStr = isNaN(r.afm) ? '<span class="mtx-na">—</span>' : `<span class="mtx-val">${Math.round(r.afm).toLocaleString()}</span>`;
+        const fStr = isNaN(r.ff)  ? '<span class="mtx-na">—</span>' : `<span class="mtx-val">${Math.round(r.ff).toLocaleString()}</span>`;
+        const dAF  = mtxDiff(r.afm, r.ff, 100);
+        let fmsCells = '';
+        if (hasFMS) {
+          const mStr = isNaN(r.fms) ? '<span class="mtx-na">—</span>' : `<span class="mtx-val">${Math.round(r.fms).toLocaleString()}</span>`;
+          fmsCells = `<td>${mStr}</td><td>${mtxDiff(r.afm,r.fms,100)}</td><td>${mtxDiff(r.ff,r.fms,100)}</td>`;
+        }
+        return `<tr><td>${r.lbl}</td><td>${aStr}</td><td>${fStr}</td><td>${dAF}</td>${fmsCells}</tr>`;
+      }).join('');
+
+      const blockHTML = `
+        <div class="matrix-block-title" style="background:${sfcCls}">${def.label}</div>
+        <table class="matrix-table">
+          <tr><th>Parameter</th><th>AFM (ft)</th><th>ForeFlight (ft)</th><th>FF−AFM</th>${fmsCols}</tr>
+          ${rows_html}
+        </table>`;
+
+      grids.forEach(gid => {
+        const g = document.getElementById(gid);
+        if (!g) return;
+        const b = document.createElement('div');
+        b.className = 'matrix-block';
+        b.innerHTML = blockHTML;
+        g.appendChild(b);
+      });
+
+      // ── CHART BLOCK ──
+      // Error bars: AFM ± 100 ft tolerance band shown as a box annotation
+      const labels = rows.map(r => r.lbl);
+      const afmData = rows.map(r => isNaN(r.afm) ? null : r.afm);
+
+      const datasets = [
+        {
+          label: 'AFM (reference)',
+          data: afmData,
+          backgroundColor: C.afm.bar,
+          borderColor: C.afm.border,
+          borderWidth: 2,
+        },
+        {
+          label: 'ForeFlight',
+          data: rows.map(r => isNaN(r.ff) ? null : r.ff),
+          backgroundColor: C.ff.bar,
+          borderColor: C.ff.border,
+          borderWidth: 2,
+        },
+      ];
+      if (hasFMS) datasets.push({
+        label: 'FMS',
+        data: rows.map(r => isNaN(r.fms) ? null : r.fms),
+        backgroundColor: C.fms.bar,
+        borderColor: C.fms.border,
+        borderWidth: 2,
+      });
+
+      const chartConfig = {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              labels: { font: { family:"'DM Mono',monospace", size:9 }, boxWidth:10 }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const val = ctx.raw;
+                  if (val === null) return '';
+                  const afmRef = afmData[ctx.dataIndex];
+                  const diff = (!isNaN(afmRef) && afmRef !== null && ctx.datasetIndex > 0)
+                    ? ` (${val - afmRef >= 0 ? '+' : ''}${Math.round(val - afmRef)} ft)`
+                    : '';
+                  return ` ${ctx.dataset.label}: ${val.toLocaleString()} ft${diff}`;
+                },
+                afterLabel: ctx => {
+                  if (ctx.datasetIndex === 0) return '';
+                  const afmRef = afmData[ctx.dataIndex];
+                  const val = ctx.raw;
+                  if (isNaN(afmRef) || afmRef === null || val === null) return '';
+                  const diff = Math.abs(val - afmRef);
+                  const status = diff <= 50 ? '✓ Within tolerance' : diff <= 100 ? '⚠ Near limit' : '✗ Exceeds tolerance';
+                  return ` ${status} (tol ±100 ft)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { font: { family:"'DM Mono',monospace", size:8 } },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { font: { family:"'DM Mono',monospace", size:8 }, callback: val => val.toLocaleString() },
+              grid: { color: 'rgba(176,196,216,0.35)' }
+            }
+          }
+        }
+      };
+
+      cgrids.forEach((cgid, idx) => {
+        const cg = document.getElementById(cgid);
+        if (!cg) return;
+        const sfcIcon = def.key.includes('wet') ? '💧' : def.key.includes('con') ? '⚠' : '☀';
+        const cb = document.createElement('div');
+        cb.className = 'chart-block';
+        const cid = `chart_${def.key}_${idx}`;
+        // tolerance legend note
+        cb.innerHTML = `
+          <div class="chart-block-title">${sfcIcon} ${def.label}</div>
+          <canvas id="${cid}"></canvas>`;
+        cg.appendChild(cb);
+        requestAnimationFrame(() => {
+          const ctx = document.getElementById(cid);
+          if (!ctx) return;
+          // deep clone config to avoid shared state between the two grids
+          const cfg = JSON.parse(JSON.stringify(chartConfig));
+          chartInstances[cid] = new Chart(ctx, cfg);
+        });
+      });
+    });
+
+    if (!anyData) {
+      grids.forEach(gid => {
+        const g = document.getElementById(gid);
+        if (g) g.innerHTML = '<div class="appendix-empty">Enter values in §2 to generate the summary.</div>';
+      });
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     REGISTRATION FILTER
+  ════════════════════════════════════════════════ */
+  function filterReg() {
+    const type = document.getElementById('acftType').value;
+    const regSel = document.getElementById('acftReg');
+    regSel.innerHTML = '';
+    if (!type) {
+      regSel.innerHTML = '<option value="">— select type first —</option>';
+      renderSpeeds('to-speeds-body', []);
+      renderSpeeds('ldg-speeds-body', []);
+      populateContamDropdowns('');
+      return;
+    }
+    const regs = fleet[type].regs;
+    if (regs.length === 1) {
+      const opt = document.createElement('option');
+      opt.value = regs[0]; opt.textContent = regs[0]; opt.selected = true;
+      regSel.appendChild(opt);
+    } else {
+      const ph = document.createElement('option'); ph.value=''; ph.textContent='— select —';
+      regSel.appendChild(ph);
+      regs.forEach(r => { const o=document.createElement('option'); o.value=r; o.textContent=r; regSel.appendChild(o); });
+    }
+    renderSpeeds('to-speeds-body',  toSpeeds(type));
+    renderSpeeds('ldg-speeds-body', ldgSpeeds(type));
+    populateContamDropdowns(type);
+    updateLdgHeaders();
+    updateCondNotes();
+  }
+
+  function populateContamDropdowns(type) {
+    const fillSel = (id, opts) => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      sel.innerHTML = '';
+      if (!opts||!opts.length) { sel.innerHTML = '<option value="">— select type first —</option>'; return; }
+      const ph = document.createElement('option'); ph.value=''; ph.textContent='— select condition —';
+      sel.appendChild(ph);
+      opts.forEach(o => { const opt=document.createElement('option'); opt.value=o; opt.textContent=o; sel.appendChild(opt); });
+    };
+    fillSel('contamCond_to', contamOptions_TO[type]||[]);
+    fillSel('contamCond',    contamOptions_LDG[type]||[]);
+  }
+
+  /* ════════════════════════════════════════════════
+     MISC
+  ════════════════════════════════════════════════ */
+  function switchPhase(phase, btn) {
+    document.querySelectorAll('.phase-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.phase-tabs button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('panel-'+phase).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function updateCondNotes() {
+    const cond = document.getElementById('rwyCond').value;
+    const el = document.getElementById('condNote');
+    if (cond==='wet') { el.style.display='block'; el.textContent='WET RUNWAY: Use AFM wet distances for T/O and LDG tables. Verify wet certification basis per AFM supplement.'; }
+    else if (cond==='contaminated') { el.style.display='block'; el.textContent='CONTAMINATED RUNWAY: Apply AFM contaminated-runway distances where published. Record braking action and contamination details in §2 Landing.'; }
+    else el.style.display='none';
+  }
+
+  function toggleConv() {
+    const body = document.getElementById('conv-body');
+    const chev = document.getElementById('conv-chevron');
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    chev.style.transform = open ? 'rotate(-90deg)' : 'rotate(0deg)';
+  }
+
+  function autoAuditPeriod() {
+    const val = document.getElementById('auditDate').value;
+    if (!val) return;
+    const m = new Date(val).getMonth() + 1;
+    document.getElementById('p1').checked = m <= 6;
+    document.getElementById('p2').checked = m >= 7;
+  }
+
+  function sendEmail() {
+    const reg = document.getElementById('acftReg').value || '[REG]';
+    const date = document.getElementById('auditDate').value || '';
+    const fmtDate = date ? new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '[DATE]';
+    const subject = encodeURIComponent(`${reg} / Performance Calculation Verification / ${fmtDate}`);
+    const body = encodeURIComponent(`Please find attached the Performance Periodic Verification Report.\n\nAircraft: ${reg}\nDate of Audit: ${fmtDate}\n\nNOTE: Please attach the saved HTML report file before sending.`);
+    window.location.href = `mailto:efb@elitejet.sk,vavros@elitejet.sk?subject=${subject}&body=${body}`;
+  }
+
+  /* ════════════════════════════════════════════════
+     RESET
+  ════════════════════════════════════════════════ */
+  function resetForm() {
+    if (!confirm('Reset all form data? This cannot be undone.')) return;
+    document.querySelectorAll('input[type="text"],input[type="date"],textarea').forEach(el=>el.value='');
+    document.querySelectorAll('input[type="checkbox"]').forEach(el=>el.checked=false);
+    document.querySelectorAll('input[type="radio"]').forEach(el=>{el.checked=el.value==='off';});
+    document.getElementById('acftType').value='';
+    document.getElementById('acftReg').innerHTML='<option value="">— select type first —</option>';
+    document.getElementById('rwyCond').value='dry';
+    document.getElementById('condNote').style.display='none';
+    renderSpeeds('to-speeds-body',[]);
+    renderSpeeds('ldg-speeds-body',[]);
+    populateContamDropdowns('');
+    updateLdgHeaders();
+    document.querySelectorAll('.calc').forEach(el=>{el.textContent='—';el.className='calc empty';});
+    ['c_ft','c_m2','c_lb','c_kg2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+    Object.values(chartInstances).forEach(c=>c.destroy());
+    Object.keys(chartInstances).forEach(k=>delete chartInstances[k]);
+    document.getElementById('matrix-grid').innerHTML='';
+    document.getElementById('chart-grid').innerHTML='';
+  }
+
+  /* ════════════════════════════════════════════════
+     INIT
+  ════════════════════════════════════════════════ */
+  renderSpeeds('to-speeds-body',[]);
+  renderSpeeds('ldg-speeds-body',[]);
+  populateContamDropdowns('');
+  updateLdgHeaders();
+  buildSummary();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.warn('SW:', err));
+  }
+</script>
+</body>
+</html>
