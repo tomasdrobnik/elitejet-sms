@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>W&B Periodic Verification Report</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ELJ W&B">
+  <meta name="theme-color" content="#0d1b2a">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0d1b2a;
+      --slate: #1e3a5f;
+      --mid: #2e5f8a;
+      --rule: #b0c4d8;
+      --light: #e8f0f7;
+      --ink: #0d1b2a;
+      --muted: #4a6278;
+      --white: #ffffff;
+      --field-bg: #f4f8fc;
+      --accent: #c8391b;
+      --ok-bg: #e6f4ec; --ok-txt: #145a2e; --ok-border: #52b376;
+      --warn-bg: #fff3cd; --warn-txt: #7a5200; --warn-border: #e0a020;
+      --fail-bg: #fde8e4; --fail-txt: #8b1a0e; --fail-border: #c8391b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      background: #dde6ee;
+      color: var(--ink);
+      padding: 1.5rem;
+    }
+
+    article {
+      background: var(--white);
+      max-width: 780px;
+      margin: 0 auto;
+      border-top: 4px solid var(--slate);
+      box-shadow: 0 4px 32px rgba(13,27,42,0.18);
+    }
+
+    header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 0.9rem 1.6rem 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      line-height: 1.4;
+    }
+
+    header p {
+      font-family: 'DM Mono', monospace;
+      font-size: 8.5px;
+      color: #7a9bbf;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: right;
+    }
+
+    main { padding: 1.1rem 1.6rem 1.6rem; }
+
+    h2 {
+      font-family: 'DM Mono', monospace;
+      font-size: 8.5px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--slate);
+      border-bottom: 1.5px solid var(--rule);
+      padding-bottom: 0.28rem;
+      margin-bottom: 0.7rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h2 span.badge {
+      background: var(--slate);
+      color: var(--white);
+      font-size: 8px;
+      padding: 0.08rem 0.35rem;
+      letter-spacing: 0.1em;
+    }
+
+    section { margin-bottom: 1.2rem; }
+
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.45rem 1rem; }
+    .span-2  { grid-column: span 2; }
+
+    .field { display: flex; flex-direction: column; gap: 0.15rem; }
+
+    .field label {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field input[type="text"],
+    .field input[type="date"],
+    .field select {
+      font-family: 'DM Mono', monospace;
+      font-size: 10.5px;
+      border: none;
+      border-bottom: 1px solid var(--rule);
+      background: transparent;
+      color: var(--ink);
+      padding: 0.2rem 0.15rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .field input:focus, .field select:focus { border-bottom-color: var(--mid); }
+    .field select { cursor: pointer; }
+
+    .check-group {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding-top: 0.3rem;
+    }
+
+    .check-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 9.5px;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .check-group input[type="checkbox"] {
+      width: 11px; height: 11px;
+      accent-color: var(--slate);
+      cursor: pointer;
+    }
+
+    ul.input-data {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.35rem 1.4rem;
+    }
+
+    ul.input-data li {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 0.2rem;
+    }
+
+    ul.input-data li span {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      white-space: nowrap;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    ul.input-data li input[type="text"] {
+      font-family: 'DM Mono', monospace;
+      font-size: 10.5px;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      width: 100%;
+      outline: none;
+      text-align: right;
+    }
+
+    ul.input-data li em {
+      font-family: 'DM Mono', monospace;
+      font-size: 8.5px;
+      font-style: normal;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    /* ── TABLE ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    thead tr { background: var(--slate); color: var(--white); }
+
+    thead th {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.65rem;
+      text-align: left;
+      border-right: 1px solid rgba(255,255,255,0.12);
+      line-height: 1.4;
+    }
+
+    thead th:last-child { border-right: none; }
+    tbody tr { border-bottom: 1px solid var(--rule); }
+    tbody tr:nth-child(even) td { background: var(--field-bg); }
+
+    tbody td {
+      padding: 0.3rem 0.65rem;
+      vertical-align: middle;
+    }
+
+    tbody td:first-child {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      width: 20%;
+    }
+
+    tbody td input[type="text"] {
+      font-family: 'DM Mono', monospace;
+      font-size: 10.5px;
+      border: none;
+      border-bottom: 1px solid var(--rule);
+      background: transparent;
+      width: 100%;
+      outline: none;
+      padding: 0.1rem 0.1rem;
+      color: var(--ink);
+      transition: border-color 0.15s;
+    }
+
+    tbody td input:focus { border-bottom-color: var(--mid); }
+
+    /* ── COMPUTED CELL ── */
+    .calc {
+      font-family: 'DM Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 500;
+      display: block;
+      padding: 0.12rem 0.3rem;
+      border-radius: 2px;
+      text-align: right;
+      transition: background 0.2s, color 0.2s;
+      min-width: 4rem;
+    }
+
+    .calc.empty     { color: var(--muted); font-weight: 400; font-style: italic; text-align: center; }
+    .calc.diff-ok   { background: var(--ok-bg);   color: var(--ok-txt);   border-left: 3px solid var(--ok-border); }
+    .calc.diff-warn { background: var(--warn-bg);  color: var(--warn-txt); border-left: 3px solid var(--warn-border); }
+    .calc.diff-fail { background: var(--fail-bg);  color: var(--fail-txt); border-left: 3px solid var(--fail-border); }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .legend span {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      padding: 0.18rem 0.5rem;
+      border-radius: 2px;
+    }
+
+    .legend span.l-ok   { background: var(--ok-bg);   color: var(--ok-txt);   border-left: 3px solid var(--ok-border); }
+    .legend span.l-warn { background: var(--warn-bg);  color: var(--warn-txt); border-left: 3px solid var(--warn-border); }
+    .legend span.l-fail { background: var(--fail-bg);  color: var(--fail-txt); border-left: 3px solid var(--fail-border); }
+
+    /* ── NOTE ── */
+    .note {
+      background: var(--light);
+      border-left: 3px solid var(--mid);
+      padding: 0.4rem 0.7rem;
+      font-size: 9px;
+      color: var(--muted);
+      margin-bottom: 0.8rem;
+      font-family: 'DM Mono', monospace;
+      line-height: 1.55;
+    }
+
+    textarea {
+      width: 100%;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      border: 1px solid var(--rule);
+      background: var(--field-bg);
+      color: var(--ink);
+      padding: 0.45rem 0.65rem;
+      resize: vertical;
+      min-height: 54px;
+      outline: none;
+      line-height: 1.55;
+    }
+
+    textarea:focus { border-color: var(--mid); }
+
+    .outcome-row {
+      display: flex;
+      gap: 1.4rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .outcome-row label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+    }
+
+    .outcome-row input[type="radio"] {
+      width: 11px; height: 11px;
+      accent-color: var(--slate);
+    }
+
+    .signoff {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0 1.6rem;
+      margin-top: 0.6rem;
+      padding-top: 0.9rem;
+      border-top: 1.5px solid var(--rule);
+    }
+
+    /* ── ACTION BUTTONS ── */
+    .action-bar {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: flex-end;
+      padding: 0.8rem 1.6rem 0.9rem;
+      border-top: 1px solid var(--rule);
+      background: var(--field-bg);
+    }
+
+    .btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.4rem 1rem;
+      border: 1.5px solid;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-reset {
+      background: transparent;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-reset:hover { background: var(--accent); color: var(--white); }
+
+    .btn-email {
+      background: transparent;
+      border-color: var(--mid);
+      color: var(--mid);
+    }
+
+    .btn-email:hover { background: var(--mid); color: var(--white); }
+
+    .btn-print {
+      background: var(--slate);
+      border-color: var(--slate);
+      color: var(--white);
+    }
+
+    .btn-print:hover { background: var(--navy); border-color: var(--navy); }
+
+    /* ── PRINT ── */
+    @page { size: A4; margin: 10mm 12mm; }
+
+    @media print {
+      body { background: white; padding: 0; font-size: 9px; }
+      article { box-shadow: none; max-width: 100%; border-top: 3px solid #1e3a5f; }
+      header, thead tr, tbody tr:nth-child(even) td, .note,
+      h2 span.badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .calc.diff-ok, .calc.diff-warn, .calc.diff-fail,
+      .legend span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .field input, textarea { border-color: #aaa !important; }
+      .action-bar { display: none; }
+      section { margin-bottom: 1rem; }
+      textarea { min-height: 46px; }
+    }
+  </style>
+</head>
+<body>
+<article>
+
+  <header>
+    <h1>W&amp;B Periodic<br>Verification Report</h1>
+    <p>Elite Jet s.r.o. · Safety Management System<br>OM-B · W&amp;B Audit Programme</p>
+  </header>
+
+  <main>
+
+    <!-- 0. AIRCRAFT & AUDIT IDENTITY -->
+    <section>
+      <h2><span class="badge">0</span> Aircraft &amp; Audit Identity</h2>
+      <div class="grid-4">
+        <div class="field">
+          <label>Aircraft Type</label>
+          <select id="acftType" onchange="filterReg()">
+            <option value="">— select —</option>
+            <option value="CL350">Challenger 3500</option>
+            <option value="GL5000">Global 5000</option>
+            <option value="XLSP">Citation XLS+</option>
+            <option value="LAT">Citation Latitude</option>
+            <option value="PC12E">PC-12/47E</option>
+            <option value="PC12G">PC-12/47G</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Registration</label>
+          <select id="acftReg">
+            <option value="">— select type first —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Date of Audit</label>
+          <input type="date" id="auditDate" onchange="autoSelectPeriod()">
+        </div>
+        <div class="field">
+          <label>Audit Period</label>
+          <div class="check-group" style="padding-top:0.6rem">
+            <label><input type="checkbox" name="period" id="p1"> JAN–JUN</label>
+            <label><input type="checkbox" name="period" id="p2"> JUL–DEC</label>
+          </div>
+        </div>
+        <div class="field span-2">
+          <label>Auditor Name</label>
+          <input type="text" id="auditorName" placeholder="Full name">
+        </div>
+        <div class="field span-2">
+          <label>EFB / ForeFlight Version</label>
+          <input type="text" id="efbVer" placeholder="e.g. ForeFlight 16.4.1">
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. TEST SCENARIO DATA -->
+    <section>
+      <h2><span class="badge">1</span> Test Scenario Data</h2>
+      <div class="note">
+        Enter identical input data into both the manual AFM calculation and ForeFlight. Record the values used below.
+      </div>
+      <ul class="input-data">
+        <li><span>Dry Operating Weight (DOW)</span><input type="text" id="s_dow" placeholder="——"><em>lb</em></li>
+        <li><span>Passengers — Total Weight</span><input type="text" id="s_pax" placeholder="——"><em>lb</em></li>
+        <li><span>Baggage / Cargo</span><input type="text" id="s_bag" placeholder="——"><em>lb</em></li>
+        <li><span>Fuel on Board (Take-off)</span><input type="text" id="s_fuel" placeholder="——"><em>lb</em></li>
+        <li><span>Computed Zero Fuel Weight (ZFW)</span><input type="text" id="s_zfw" placeholder="——"><em>lb</em></li>
+      </ul>
+    </section>
+
+    <!-- 2. CALCULATION COMPARISON -->
+    <section>
+      <h2><span class="badge">2</span> Calculation Comparison</h2>
+
+      <div class="legend">
+        <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.08em;">Colour key:</span>
+        <span class="l-ok">✓ Within tolerance</span>
+        <span class="l-warn">⚠ &gt;50% tolerance</span>
+        <span class="l-fail">✗ Exceeds tolerance</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Manual AFM<br>(Index Method)</th>
+            <th>ForeFlight Output<br>(Digital Profile)</th>
+            <th>Difference (FF − Manual)<br>
+              <span style="font-size:7px;opacity:0.75;letter-spacing:0.06em;">
+                Mass: ±200 lb &nbsp;|&nbsp; CG: ±0.5% MAC
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Take-off Mass</td>
+            <td><input type="text" id="to_mass_afm" placeholder="lb" oninput="recalc()"></td>
+            <td><input type="text" id="to_mass_ff"  placeholder="lb" oninput="recalc()"></td>
+            <td><span class="calc empty" id="to_mass_diff">—</span></td>
+          </tr>
+          <tr>
+            <td>Take-off CG</td>
+            <td><input type="text" id="to_cg_afm" placeholder="%MAC" oninput="recalc()"></td>
+            <td><input type="text" id="to_cg_ff"  placeholder="%MAC" oninput="recalc()"></td>
+            <td><span class="calc empty" id="to_cg_diff">—</span></td>
+          </tr>
+          <tr>
+            <td>Landing Mass</td>
+            <td><input type="text" id="ldg_mass_afm" placeholder="lb" oninput="recalc()"></td>
+            <td><input type="text" id="ldg_mass_ff"  placeholder="lb" oninput="recalc()"></td>
+            <td><span class="calc empty" id="ldg_mass_diff">—</span></td>
+          </tr>
+          <tr>
+            <td>Landing CG</td>
+            <td><input type="text" id="ldg_cg_afm" placeholder="%MAC" oninput="recalc()"></td>
+            <td><input type="text" id="ldg_cg_ff"  placeholder="%MAC" oninput="recalc()"></td>
+            <td><span class="calc empty" id="ldg_cg_diff">—</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3. FINDINGS & OBSERVATIONS -->
+    <section>
+      <h2><span class="badge">3</span> Findings &amp; Observations</h2>
+      <textarea id="findings" placeholder="Record any discrepancies, anomalies, or observations here. State N/A if none found."></textarea>
+    </section>
+
+    <!-- 4. AUDIT OUTCOME -->
+    <section>
+      <h2><span class="badge">4</span> Audit Outcome</h2>
+      <div class="outcome-row">
+        <label><input type="radio" name="outcome" value="pass"> PASS — Results within acceptable tolerance</label>
+        <label><input type="radio" name="outcome" value="fail"> FAIL — Discrepancy exceeds tolerance; corrective action required</label>
+        <label><input type="radio" name="outcome" value="pending"> PENDING — Further investigation required</label>
+      </div>
+    </section>
+
+    <!-- 5. SIGN-OFF -->
+    <section>
+      <h2><span class="badge">5</span> Sign-off</h2>
+      <div class="signoff">
+        <div class="field">
+          <label>Auditor Signature</label>
+          <input type="text" id="sig1" placeholder="Signature / stamp">
+        </div>
+        <div class="field">
+          <label>Date Completed</label>
+          <input type="date" id="sig_date">
+        </div>
+        <div class="field">
+          <label>Reviewed by (Safety Manager)</label>
+          <input type="text" id="sig2" placeholder="Name / signature">
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="action-bar">
+    <button class="btn btn-reset" onclick="resetForm()">⟳ Reset Form</button>
+    <button class="btn btn-email" onclick="sendEmail()">✉ Send via Email</button>
+    <button class="btn btn-print" onclick="window.print()">⎙ Print / PDF</button>
+  </div>
+
+</article>
+
+<script>
+  /* ── FLEET ── */
+  const fleet = {
+    CL350:  ['9H-LRSR'],
+    GL5000: ['OM-NTN'],
+    XLSP:   ['OM-YKS', 'OM-FLY'],
+    LAT:    ['OM-LAT'],
+    PC12E:  ['OM-TVV'],
+    PC12G:  ['OM-TVG'],
+  };
+
+  function filterReg() {
+    const type = document.getElementById('acftType').value;
+    const regSel = document.getElementById('acftReg');
+    regSel.innerHTML = '';
+    if (!type) { regSel.innerHTML = '<option value="">— select type first —</option>'; return; }
+    const regs = fleet[type] || [];
+    if (regs.length === 1) {
+      const opt = document.createElement('option');
+      opt.value = regs[0]; opt.textContent = regs[0]; opt.selected = true;
+      regSel.appendChild(opt);
+    } else {
+      const ph = document.createElement('option');
+      ph.value = ''; ph.textContent = '— select —';
+      regSel.appendChild(ph);
+      regs.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r; opt.textContent = r;
+        regSel.appendChild(opt);
+      });
+    }
+  }
+
+  /* ── CALC HELPERS ── */
+  function v(id) {
+    const n = parseFloat(document.getElementById(id).value);
+    return isNaN(n) ? NaN : n;
+  }
+
+  function fmtDiff(n, dec) {
+    if (isNaN(n)) return null;
+    const s = Math.abs(n).toFixed(dec);
+    return (n >= 0 ? '+' : '−') + s;
+  }
+
+  function diffClass(abs, tol) {
+    if (abs <= tol * 0.5) return 'diff-ok';
+    if (abs <= tol)       return 'diff-warn';
+    return 'diff-fail';
+  }
+
+  function setCalc(id, text, cls) {
+    const el = document.getElementById(id);
+    el.textContent = text !== null ? text : '—';
+    el.className = 'calc' + (text === null ? ' empty' : '') + (cls ? ' ' + cls : '');
+  }
+
+  /* ── RECALC ── */
+  function recalc() {
+    // Mass tolerance: ±200 lb
+    const rows = [
+      { afm:'to_mass_afm',  ff:'to_mass_ff',  out:'to_mass_diff',  tol:200,  dec:0, isCG:false },
+      { afm:'to_cg_afm',    ff:'to_cg_ff',    out:'to_cg_diff',    tol:0.5,  dec:2, isCG:true  },
+      { afm:'ldg_mass_afm', ff:'ldg_mass_ff', out:'ldg_mass_diff', tol:200,  dec:0, isCG:false },
+      { afm:'ldg_cg_afm',   ff:'ldg_cg_ff',   out:'ldg_cg_diff',   tol:0.5,  dec:2, isCG:true  },
+    ];
+
+    rows.forEach(r => {
+      const a = v(r.afm), b = v(r.ff);
+      if (!isNaN(a) && !isNaN(b)) {
+        const diff = b - a;
+        const text = fmtDiff(diff, r.dec) + (r.isCG ? ' %MAC' : ' lb');
+        setCalc(r.out, text, diffClass(Math.abs(diff), r.tol));
+      } else {
+        setCalc(r.out, null, null);
+      }
+    });
+  }
+
+  /* ── AUTO PERIOD ── */
+  function autoSelectPeriod() {
+    const val = document.getElementById('auditDate').value;
+    if (!val) return;
+    const month = new Date(val).getMonth() + 1; // 1-based
+    document.getElementById('p1').checked = month >= 1 && month <= 6;
+    document.getElementById('p2').checked = month >= 7 && month <= 12;
+  }
+
+  /* ── EMAIL ── */
+  function sendEmail() {
+    const reg  = document.getElementById('acftReg').value  || '[REG]';
+    const date = document.getElementById('auditDate').value || '[DATE]';
+    const fmtDate = date !== '[DATE]'
+      ? new Date(date).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+      : '[DATE]';
+    const subject = encodeURIComponent(`${reg} / W&B Calculation Verification / ${fmtDate}`);
+    const body = encodeURIComponent(
+      `Please find attached the W&B Periodic Verification Report.\n\n` +
+      `Aircraft: ${reg}\n` +
+      `Date of Audit: ${fmtDate}\n\n` +
+      `NOTE: Please attach the saved HTML report file before sending.`
+    );
+    const to = 'efb@elitejet.sk,vavros@elitejet.sk';
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+  }
+
+  /* ── RESET ── */
+  function resetForm() {
+    if (!confirm('Reset all form data? This cannot be undone.')) return;
+    document.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(el => el.value = '');
+    document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => el.checked = false);
+    document.getElementById('acftType').value = '';
+    document.getElementById('acftReg').innerHTML = '<option value="">— select type first —</option>';
+    ['to_mass_diff','to_cg_diff','ldg_mass_diff','ldg_cg_diff'].forEach(id => setCalc(id, null, null));
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.warn('SW:', err));
+  }
+</script>
+</body>
+</html>
