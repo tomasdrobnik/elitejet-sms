@@ -1330,8 +1330,8 @@
     ['c_ft','c_m2','c_lb','c_kg2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
     Object.values(chartInstances).forEach(c=>c.destroy());
     Object.keys(chartInstances).forEach(k=>delete chartInstances[k]);
-    document.getElementById('matrix-grid').innerHTML='';
-    document.getElementById('chart-grid').innerHTML='';
+    document.getElementById('appendix-matrix-grid').innerHTML='';
+    document.getElementById('appendix-chart-grid').innerHTML='';
   }
 
   /* ════════════════════════════════════════════════
