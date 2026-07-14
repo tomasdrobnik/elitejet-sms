@@ -1,0 +1,24 @@
+{
+  "name": "Elite Jet SMS Forms",
+  "short_name": "ELJ SMS",
+  "description": "Elite Jet s.r.o. Safety Management System — Verification Reports",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#dde6ee",
+  "theme_color": "#0d1b2a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
