@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator — run once</title></head>
+<body>
+<canvas id="c192" width="192" height="192" style="display:none"></canvas>
+<canvas id="c512" width="512" height="512" style="display:none"></canvas>
+<p>Generating icons… <span id="status"></span></p>
+<script>
+function drawIcon(canvas) {
+  const s = canvas.width;
+  const ctx = canvas.getContext('2d');
+  // Background
+  ctx.fillStyle = '#0d1b2a';
+  ctx.fillRect(0, 0, s, s);
+  // Border
+  ctx.strokeStyle = '#1e3a5f';
+  ctx.lineWidth = s * 0.04;
+  ctx.strokeRect(s*0.06, s*0.06, s*0.88, s*0.88);
+  // Text ELJ
+  ctx.fillStyle = '#2e5f8a';
+  ctx.font = `bold ${s*0.32}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('ELJ', s/2, s*0.42);
+  // Sub text
+  ctx.fillStyle = '#4a6278';
+  ctx.font = `${s*0.12}px monospace`;
+  ctx.fillText('SMS', s/2, s*0.68);
+}
+
+['c192','c512'].forEach(id => {
+  const c = document.getElementById(id);
+  drawIcon(c);
+  const link = document.createElement('a');
+  link.download = `icon-${c.width}.png`;
+  link.href = c.toDataURL('image/png');
+  link.textContent = `Download icon-${c.width}.png`;
+  link.style.display = 'block';
+  link.style.margin = '10px';
+  document.body.appendChild(link);
+});
+document.getElementById('status').textContent = 'Done — click links to download icons.';
+</script>
+</body>
+</html>
