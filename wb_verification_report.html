@@ -599,75 +599,7 @@
 </div>
 
 <script>
-  window.emailSubjectFn = (reg, date) => `${reg} / W&B Calculation Verification / ${date}`;
-
-  /* ── PRINT FIX: freeze input values before printing ── */
-  function _freezeForm() {
-    const els = [];
-    document.querySelectorAll('input[type="text"],input[type="date"],textarea').forEach(el => {
-      if (!el.value) return;
-      const s = document.createElement('span');
-      s.className = 'print-value';
-      s.textContent = el.value;
-      s.style.cssText = 'font-family:inherit;font-size:inherit;color:inherit;display:block;border-bottom:1px solid #aaa;padding:0.1rem 0;min-height:1em;';
-      el.parentNode.insertBefore(s, el);
-      el.style.display = 'none';
-      els.push({el, s});
-    });
-    document.querySelectorAll('select').forEach(el => {
-      const txt = el.options[el.selectedIndex]?.text;
-      if (!txt || !el.value) return;
-      const s = document.createElement('span');
-      s.className = 'print-value';
-      s.textContent = txt;
-      s.style.cssText = 'font-family:inherit;font-size:inherit;color:inherit;display:block;border-bottom:1px solid #aaa;padding:0.1rem 0;min-height:1em;';
-      el.parentNode.insertBefore(s, el);
-      el.style.display = 'none';
-      els.push({el, s});
-    });
-    return els;
-  }
-
-  function _restoreForm(els) {
-    els.forEach(({el, s}) => { el.style.display = ''; s.remove(); });
-  }
-
-  function safePrint() {
-    const els = _freezeForm();
-    window.print();
-    setTimeout(() => _restoreForm(els), 1500);
-  }
-
-  function openMailto(subject) {
-    const body = encodeURIComponent('Please find the completed W&B Verification Report attached.\n\nNOTE: Attach the PDF you saved from the print dialog before sending.');
-    window.location.href = `mailto:efb@elitejet.sk,vavros@elitejet.sk?subject=${encodeURIComponent(subject)}&body=${body}`;
-  }
-
-  function savePdfAndEmail() {
-    document.getElementById('pdf-overlay').style.display = 'flex';
-  }
-
-  function overlayCancel() {
-    document.getElementById('pdf-overlay').style.display = 'none';
-  }
-
-  function overlayProceed() {
-    document.getElementById('pdf-overlay').style.display = 'none';
-    const reg = document.getElementById('acftReg')?.value || '[REG]';
-    const date = document.getElementById('auditDate')?.value || '';
-    const fmtDate = date ? new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '[DATE]';
-    const subject = window.emailSubjectFn(reg, fmtDate);
-    const els = _freezeForm();
-    const restore = () => _restoreForm(els);
-    window.addEventListener('afterprint', function h() {
-      window.removeEventListener('afterprint', h);
-      restore();
-      setTimeout(() => openMailto(subject), 400);
-    });
-    window.print();
-    setTimeout(restore, 10000); // safety fallback
-  }
-</script>
+  /* ── FLEET ── */
   const fleet = {
     CL350:  ['9H-LRSR'],
     GL5000: ['OM-NTN'],
@@ -754,7 +686,6 @@
     document.getElementById('p2').checked = month >= 7 && month <= 12;
   }
 
-  /* ── EMAIL ── */
   /* ── RESET ── */
   function resetForm() {
     if (!confirm('Reset all form data? This cannot be undone.')) return;
@@ -763,6 +694,71 @@
     document.getElementById('acftType').value = '';
     document.getElementById('acftReg').innerHTML = '<option value="">— select type first —</option>';
     ['to_mass_diff','to_cg_diff','ldg_mass_diff','ldg_cg_diff'].forEach(id => setCalc(id, null, null));
+  }
+
+  /* ── PRINT FIX: freeze input values before printing ── */
+  function _freezeForm() {
+    const els = [];
+    document.querySelectorAll('input[type="text"],input[type="date"],textarea').forEach(el => {
+      if (!el.value) return;
+      const s = document.createElement('span');
+      s.textContent = el.value;
+      s.style.cssText = 'font-family:inherit;font-size:inherit;color:inherit;display:block;border-bottom:1px solid #aaa;padding:0.1rem 0;min-height:1em;';
+      el.parentNode.insertBefore(s, el);
+      el.style.display = 'none';
+      els.push({el, s});
+    });
+    document.querySelectorAll('select').forEach(el => {
+      const txt = el.options[el.selectedIndex]?.text;
+      if (!txt || !el.value) return;
+      const s = document.createElement('span');
+      s.textContent = txt;
+      s.style.cssText = 'font-family:inherit;font-size:inherit;color:inherit;display:block;border-bottom:1px solid #aaa;padding:0.1rem 0;min-height:1em;';
+      el.parentNode.insertBefore(s, el);
+      el.style.display = 'none';
+      els.push({el, s});
+    });
+    return els;
+  }
+
+  function _restoreForm(els) {
+    els.forEach(({el, s}) => { el.style.display = ''; s.remove(); });
+  }
+
+  function safePrint() {
+    const els = _freezeForm();
+    window.print();
+    setTimeout(() => _restoreForm(els), 1500);
+  }
+
+  function _openMailto() {
+    const reg = document.getElementById('acftReg')?.value || '[REG]';
+    const date = document.getElementById('auditDate')?.value || '';
+    const fmtDate = date ? new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '[DATE]';
+    const subject = encodeURIComponent(`${reg} / W&B Calculation Verification / ${fmtDate}`);
+    const body = encodeURIComponent('Please find the completed W&B Verification Report attached.\n\nNOTE: Attach the PDF you saved before sending.');
+    window.location.href = `mailto:efb@elitejet.sk,vavros@elitejet.sk?subject=${subject}&body=${body}`;
+  }
+
+  function savePdfAndEmail() {
+    document.getElementById('pdf-overlay').style.display = 'flex';
+  }
+
+  function overlayCancel() {
+    document.getElementById('pdf-overlay').style.display = 'none';
+  }
+
+  function overlayProceed() {
+    document.getElementById('pdf-overlay').style.display = 'none';
+    const els = _freezeForm();
+    const restore = () => _restoreForm(els);
+    window.addEventListener('afterprint', function h() {
+      window.removeEventListener('afterprint', h);
+      restore();
+      setTimeout(_openMailto, 400);
+    });
+    window.print();
+    setTimeout(restore, 10000);
   }
 </script>
 <script>
