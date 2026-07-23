@@ -749,11 +749,15 @@
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 2000);
 
-    // On macOS: open Mail after download so user can attach from Downloads
+    // On macOS: open Mail via a link click (avoids Safari blocking mailto after download)
     if (isMacOS) {
       const se = encodeURIComponent(subject);
       const be = encodeURIComponent('Please find the completed verification report attached.\n\nFile saved to Downloads: ' + filename + '\nAttach it before sending.');
-      setTimeout(() => { window.location.href = 'mailto:efb@elitejet.sk,vavros@elitejet.sk?subject=' + se + '&body=' + be; }, 1000);
+      const ml = document.createElement('a');
+      ml.href = 'mailto:efb@elitejet.sk,vavros@elitejet.sk?subject=' + se + '&body=' + be;
+      ml.target = '_blank';
+      document.body.appendChild(ml);
+      setTimeout(() => { ml.click(); document.body.removeChild(ml); }, 800);
     }
   }
 
